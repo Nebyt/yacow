@@ -1,0 +1,54 @@
+{
+  "name": "yacow",
+  "version": "0.0.0",
+  "private": true,
+  "description": "YACOW -- Yet Another Cardano Only Wallet: a lightweight interactive terminal wallet for Cardano",
+  "type": "module",
+  "bin": {
+    "yacow": "./dist/cli.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "start": "node dist/cli.js",
+    "dev": "bun run build && node dist/cli.js",
+    "smoke": "bun run build && node scripts/smoke.mjs",
+    "smoke:cli": "bun run build && node scripts/smoke-cli.mjs",
+    "test": "NODE_ENV=jest bunx jest",
+    "test:ui": "bun run smoke",
+    "test:all": "bun run test && bun run smoke && bun run smoke:cli",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@emurgo/cardano-serialization-lib-nodejs": "14.1.2",
+    "@emurgo/cip4-js": "^1.0.5",
+    "bip39": "^3.1.0",
+    "cardano-wallet": "1.2.2",
+    "commander": "^12.1.0",
+    "ink": "^5.1.0",
+    "ink-select-input": "^6.0.0",
+    "ink-spinner": "^5.0.0",
+    "ink-text-input": "^6.0.0",
+    "react": "^18.3.1",
+    "zxcvbn": "^4.4.2"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.25.2",
+    "@babel/preset-env": "^7.25.4",
+    "@babel/preset-react": "^7.24.7",
+    "@babel/preset-typescript": "^7.24.7",
+    "@types/jest": "^29.5.12",
+    "@types/node": "^20.14.15",
+    "@types/react": "^18.3.4",
+    "@types/zxcvbn": "^4.4.5",
+    "babel-jest": "^29.7.0",
+    "babel-plugin-transform-import-meta": "^2.3.3",
+    "ink-testing-library": "^4.0.0",
+    "jest": "^29.7.0",
+    "typescript": "^5.4.5",
+    "undici": "^8.10.1"
+  }
+}
