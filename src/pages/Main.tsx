@@ -19,7 +19,7 @@ export function Main(): React.ReactElement {
 
   return (
     <Box flexDirection="column">
-      <Plate wallet={activeWallet} network={network} />
+      <Plate wallet={activeWallet} />
       <Box marginTop={1} flexDirection="column">
         <Balance wallet={activeWallet} network={network} refreshToken={refreshToken} />
         <Box marginTop={1}>
