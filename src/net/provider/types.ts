@@ -201,8 +201,8 @@ export interface ChainProvider {
   // Staking is out of v1 scope (decision 1.1) but the contract reserves it so
   // the adapters can grow into it without a breaking change. Optional: callers
   // must feature-detect before use.
-  getAccountState?(stakeAddress: string): Promise<AccountState | null>;
-  getPoolInfo?(poolId: string): Promise<PoolInfo | null>;
+  getAccountState(stakeAddress: string): Promise<AccountState | null>;
+  getPoolInfo(poolId: string): Promise<PoolInfo | null>;
 }
 
 // ---------------------------------------------------------------------------
