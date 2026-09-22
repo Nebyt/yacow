@@ -24,7 +24,7 @@ describe('setupChoices', () => {
     const labels = setupChoices('preprod', { homeDir: tmp(), env }).map((c) => c.label);
     expect(labels).toEqual([
       'Use Koios (no key needed, lower rate limit)',
-      'Add a Blockfrost key for Cardano Preprod Testnet',
+      'Add a Blockfrost key for Cardano Preprod',
       'Add a Koios token (works on all networks)',
     ]);
   });

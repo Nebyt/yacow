@@ -81,7 +81,7 @@ check(
 
 check('network page', app({ initialRoute: 'network', initialWalletList: [] }), [
   'Cardano Mainnet',
-  'Cardano Preprod Testnet',
+  'Cardano Preprod',
   '(current)',
 ]);
 
@@ -129,7 +129,7 @@ check(
 check(
   'same wallet shown on preprod',
   app({ initialWalletList: ['w1'], initialActiveWallet: ACTIVE, initialNetwork: 'preprod' }),
-  ['Cardano Preprod Testnet', 'my-wallet', 'EHKL-5865'],
+  ['Cardano Preprod', 'my-wallet', 'EHKL-5865'],
 );
 
 // footer omits the current page's own shortcut
@@ -178,10 +178,10 @@ const setupPage = (choices, network = 'preprod') =>
 check(
   'provider setup: fresh install offers both providers',
   setupPage([
-    { kind: 'add-key', provider: 'blockfrost', network: 'preprod', label: 'Add a Blockfrost key for Cardano Preprod Testnet' },
-    { kind: 'add-key', provider: 'koios', network: 'preprod', label: 'Add a Koios key for Cardano Preprod Testnet' },
+    { kind: 'add-key', provider: 'blockfrost', network: 'preprod', label: 'Add a Blockfrost key for Cardano Preprod' },
+    { kind: 'add-key', provider: 'koios', network: 'preprod', label: 'Add a Koios key for Cardano Preprod' },
   ]),
-  ['Connect to Cardano', 'No provider is set up for', 'Cardano Preprod Testnet', 'Add a Blockfrost key'],
+  ['Connect to Cardano', 'No provider is set up for', 'Cardano Preprod', 'Add a Blockfrost key'],
 );
 
 check(
@@ -190,11 +190,11 @@ check(
     [
       { kind: 'use-provider', provider: 'koios', network: 'mainnet', label: 'Use Koios (key already set for mainnet)' },
       { kind: 'add-key', provider: 'blockfrost', network: 'mainnet', label: 'Add a Blockfrost key for Cardano Mainnet' },
-      { kind: 'switch-network', network: 'preprod', label: 'Switch back to Cardano Preprod Testnet' },
+      { kind: 'switch-network', network: 'preprod', label: 'Switch back to Cardano Preprod' },
     ],
     'mainnet',
   ),
-  ['Cardano Mainnet', 'Use Koios', 'Add a Blockfrost key', 'Switch back to Cardano Preprod Testnet'],
+  ['Cardano Mainnet', 'Use Koios', 'Add a Blockfrost key', 'Switch back to Cardano Preprod'],
 );
 
 // The gate must not offer any way to navigate away.
@@ -224,7 +224,7 @@ const ROWS = [
     perNetwork: true,
     cells: [
       { scope: 'mainnet', scopeLabel: 'Cardano Mainnet', network: 'mainnet', masked: 'mainnet****1234', isSet: true, fromEnv: false, usable: true },
-      { scope: 'preprod', scopeLabel: 'Cardano Preprod Testnet', network: 'preprod', masked: '(not set)', isSet: false, fromEnv: false, usable: false },
+      { scope: 'preprod', scopeLabel: 'Cardano Preprod', network: 'preprod', masked: '(not set)', isSet: false, fromEnv: false, usable: false },
     ],
   },
   {
@@ -244,7 +244,7 @@ const settingsPage = (network = 'preprod') =>
   React.createElement(
     AppProvider,
     { initialRoute: 'settings', initialNetwork: network, initialWalletList: [] },
-    React.createElement(Settings, { rows: ROWS, summary: 'Cardano Preprod Testnet served by Blockfrost.' }),
+    React.createElement(Settings, { rows: ROWS, summary: 'Cardano Preprod served by Blockfrost.' }),
   );
 
 check('settings: grid shows both networks per provider', settingsPage(), [
@@ -253,18 +253,18 @@ check('settings: grid shows both networks per provider', settingsPage(), [
   'primary',
   'fallback (used when primary is unavailable)',
   'Cardano Mainnet: mainnet****1234',
-  'Cardano Preprod Testnet: not set',
+  'Cardano Preprod: not set',
   '(active)',
 ]);
 
 check('settings: offers per-network key actions and role swap', settingsPage(), [
-  'Add Blockfrost key for Cardano Preprod Testnet',
+  'Add Blockfrost key for Cardano Preprod',
   'Replace Blockfrost key for Cardano Mainnet',
   'Remove Blockfrost key for Cardano Mainnet',
   // Koios is account-wide: one entry, no network in the label.
   'Add Koios token (all networks)',
   'Swap roles (Koios becomes primary)',
-  'Test connection on Cardano Preprod Testnet',
+  'Test connection on Cardano Preprod',
 ]);
 
 check('settings: Koios shows one account-wide row, not one per network', settingsPage(), [

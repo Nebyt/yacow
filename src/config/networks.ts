@@ -27,7 +27,7 @@ export const NETWORKS: Readonly<Record<NetworkName, Network>> = Object.freeze({
   },
   preprod: {
     name: 'preprod',
-    displayName: 'Cardano Preprod Testnet',
+    displayName: 'Cardano Preprod',
     networkId: 0,
     byronProtocolMagic: 1,
   },
