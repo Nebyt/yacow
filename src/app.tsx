@@ -83,6 +83,9 @@ function hintsFor(route: string, hasWallet: boolean): Hint[] {
   type NavHint = Hint & { to?: string };
   const hints: NavHint[] = [];
   if (hasWallet) {
+    if (route === 'main') {
+      hints.push({ key: 'R', label: 'refresh' });
+    }
     hints.push(
       { key: 'm', label: 'main', to: 'main' },
       { key: 's', label: 'send', to: 'send' },
@@ -176,9 +179,11 @@ function Shell(): React.ReactElement {
   }
 
   return (
-    <Box flexDirection="column" borderStyle="double" borderColor="gray">
+    <Box flexDirection="column" borderStyle="double" borderColor="gray" >
       <Header network={network} />
-      <Box marginTop={1}>{body}</Box>
+      <Box marginTop={1} width="100%">
+        {body}
+      </Box>
       <Footer hints={hintsFor(route, hasWallet)} />
     </Box>
   );

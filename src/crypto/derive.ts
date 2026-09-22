@@ -77,3 +77,11 @@ export function deriveBaseAddress(mnemonic: string, opts: DerivePathOpts): strin
     getNetwork(opts.network).networkId,
   );
 }
+
+export const deriveExternalAddress = (accountPublic: Bip32PublicKey, index: number = 0, network: NetworkName): string =>
+  baseAddressFromAccountPublic(
+    accountPublic,
+    ROLE_EXTERNAL,
+    index,
+    getNetwork(network).networkId,
+  );
