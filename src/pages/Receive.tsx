@@ -39,6 +39,7 @@ export function Receive(): React.ReactElement {
 
       <Box marginTop={1} flexDirection="column" justifyContent="center" alignItems="center">
         <Text color="cyan">{receiverAddr}</Text>
+        <Text color="gray" italic>m/1852'/1815'/0'/0/0</Text>
         <Box marginTop={1}>
           <Text>{qrCodeAddress}</Text>
         </Box>
