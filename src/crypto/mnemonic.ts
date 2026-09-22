@@ -4,7 +4,6 @@ import * as bip39 from 'bip39';
 import type { Bip32PrivateKey } from '@emurgo/cardano-serialization-lib-nodejs';
 import { RustModule } from './rust.js';
 
-/** Yoroi's default is a 15-word (160-bit) phrase; 24 words (256-bit) also allowed. */
 export type WordCount = 15 | 24;
 
 const STRENGTH: Record<WordCount, number> = { 15: 160, 24: 256 };

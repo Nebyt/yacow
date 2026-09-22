@@ -13,14 +13,41 @@ import { Receive } from './pages/Receive.js';
 import { Network } from './pages/Network.js';
 import { ProviderSetup } from './pages/ProviderSetup.js';
 import { Settings } from './pages/Settings.js';
+import { ChainProvider, PROVIDER_LABELS } from './net/provider/types.js';
+import { FallbackProvider } from './net/provider/fallback.js';
+import { getProvider } from './net/provider/registry.js';
+
+function servedByLabel(provider: ChainProvider): string | null {
+  const fallback = provider as Partial<FallbackProvider>;
+  const served = fallback.id;
+
+  if (served == null) return null;
+
+  const via = PROVIDER_LABELS[served];
+
+  return fallback.primaryCoolingDown === true
+    ? `${via} — primary unavailable`
+    : via;
+}
 
 function Header({ network }: { network: NetworkName }): React.ReactElement {
+  const provider = getProvider(network);
+  const servedBy = servedByLabel(provider);
+
   return (
-    <Box justifyContent="space-between">
-      <Text bold color="magenta">
-        ⟠ YACOW
+    <Box
+      justifyContent="space-between"
+      borderStyle="single"
+      borderColor="blue"
+      paddingX={1}
+    >
+      <Text bold underline color="blue">
+        YACOW
       </Text>
-      <Text color="yellow">{NETWORKS[network].displayName}</Text>
+      <Text color="yellow">
+        {NETWORKS[network].displayName}
+        <Text color="greenBright">{servedBy != null ? ` — ${servedBy}` : 'no provider'}</Text>
+      </Text>
     </Box>
   );
 }
@@ -149,7 +176,7 @@ function Shell(): React.ReactElement {
   }
 
   return (
-    <Box flexDirection="column" paddingX={1}>
+    <Box flexDirection="column" borderStyle="double" borderColor="gray">
       <Header network={network} />
       <Box marginTop={1}>{body}</Box>
       <Footer hints={hintsFor(route, hasWallet)} />

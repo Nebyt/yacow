@@ -35,6 +35,14 @@ export function accountPublicKeyFromHex(hex: string): Bip32PublicKey {
   return RustModule.CSL.Bip32PublicKey.from_bytes(Buffer.from(hex, 'hex'));
 }
 
+export function rewardAddressBech32FromAccountPublic(accountPublic: Bip32PublicKey, network: NetworkName): string {
+  const CSL = RustModule.CSL;
+  const stakeKey = accountPublic.derive(ROLE_STAKING).derive(STAKING_INDEX).to_raw_key();
+  const stakeCred = CSL.Credential.from_keyhash(stakeKey.hash());
+  const stakeAddr = CSL.RewardAddress.new(getNetwork(network).networkId, stakeCred);
+  return stakeAddr.to_address().to_bech32();
+}
+
 /** Build a Shelley base address (payment + staking) as bech32 from an account public key. */
 export function baseAddressFromAccountPublic(
   accountPublic: Bip32PublicKey,

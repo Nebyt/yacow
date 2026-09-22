@@ -2,7 +2,7 @@ import React from 'react';
 import { Box, Text } from 'ink';
 import { useStore } from '../state/store.js';
 import { Plate } from '../components/Plate.js';
-import { Balance } from '../components/Balance.js';
+import { WalletInfo } from '../components/WalletInfo.js';
 
 /** Dashboard: wallet plate + balance + latest txs (plan §3 Op 2/3). */
 export function Main(): React.ReactElement {
@@ -19,13 +19,8 @@ export function Main(): React.ReactElement {
 
   return (
     <Box flexDirection="column">
-      <Plate wallet={activeWallet} network={network} />
-      <Box marginTop={1} flexDirection="column">
-        <Balance wallet={activeWallet} network={network} refreshToken={refreshToken} />
-        <Box marginTop={1}>
-          <Text color="gray">Recent transactions land here (M3). R refresh · s send · r receive</Text>
-        </Box>
-      </Box>
+      <Plate wallet={activeWallet} />
+      <WalletInfo wallet={activeWallet} network={network} refreshToken={refreshToken} />
     </Box>
   );
 }
