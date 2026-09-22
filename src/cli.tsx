@@ -10,19 +10,10 @@ import { readSettings } from './config/settings.js';
 import { isConfigured } from './config/providers.js';
 import { initialRoute } from './state/routing.js';
 import { abortInFlightRequests } from './net/provider/shutdown.js';
-import { looksLikeCommand, runCommand } from './commands/index.js';
 
 async function main(): Promise<void> {
   // WASM must be ready before any crypto call (plan §2 startup gate).
   await RustModule.load();
-
-  // `yacow <command> ...` runs a non-interactive tool instead of the TUI.
-  // Commands are read-only, so they skip the keystore directory setup.
-  const argv = process.argv.slice(2);
-  if (looksLikeCommand(argv)) {
-    await runCommand(argv);
-    return;
-  }
 
   // Ensure ~/.yacow exists and is owner-only.
   ensureSecureDir(DEFAULT_HOME_DIR);
