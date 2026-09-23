@@ -2,6 +2,7 @@ import React, { createContext, useCallback, useContext, useMemo, useState } from
 import { DEFAULT_NETWORK, type NetworkName } from '../config/networks.js';
 import type { Plate } from '../crypto/plate.js';
 import { listWallets } from '../wallet/discoverWallets.js';
+import clipboard from 'clipboardy';
 
 export type Route =
   | 'providerSetup'
@@ -31,12 +32,23 @@ export interface AppStore {
   walletList: string[];
   refreshWalletList: () => void;
   hasWallet: boolean;
+  errorHappened: boolean;
+  errorMessage: string | null;
+  setErrorMessage: (message: string | null) => void;
+  showError: () => void;
+  showInfoMessage: boolean;
+  infoMessage: string | null;
+  setInfoMessage: (message: string | null) => void;
+  showInfo: () => void;
   /** When true, a text field owns the keyboard; global shortcuts are suspended. */
   capturing: boolean;
   setCapturing: (capturing: boolean) => void;
   /** Bumped by the R shortcut; chain-reading views re-fetch when it changes. */
   refreshToken: number;
   refresh: () => void;
+  receiveAddress: string | null;
+  setReceiveAddress: (address: string | null) => void;
+  copyReceiverAddress: () => Promise<void>;
 }
 
 const AppContext = createContext<AppStore | null>(null);
@@ -66,8 +78,44 @@ export function AppProvider({
   const [route, setRoute] = useState<Route>(initialRoute ?? (hasWallet ? 'main' : 'onboarding'));
   const [network, setNetwork] = useState<NetworkName>(initialNetwork);
   const [capturing, setCapturing] = useState<boolean>(false);
+  const [errorHappened, setErrorHappened] = useState<boolean>(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [showInfoMessage, setShowInfoMessage] = useState<boolean>(false);
+  const [infoMessage, setInfoMessage] = useState<string | null>(null);
   const [refreshToken, setRefreshToken] = useState(0);
+  const [receiveAddress, setReceiveAddress] = useState<string | null>(null);
+
+  const showError = useCallback(() => {
+    setErrorHappened(true);
+    setTimeout(() => {
+      setErrorHappened(false)
+      setErrorMessage(null);
+    }, 3000);
+  }, []);
+
+  const showInfo = useCallback(() => {
+    setShowInfoMessage(true);
+    setTimeout(() => {
+      setShowInfoMessage(false);
+      setInfoMessage(null);
+    }, 3000);
+  }, []);
+  
   const refresh = useCallback(() => setRefreshToken((n) => n + 1), []);
+  
+  const copyReceiverAddress = useCallback(async () => {
+    if (receiveAddress == null) {
+      return;
+    }
+    try {
+      await clipboard.write(receiveAddress);
+      setInfoMessage('Address copied to clipboard.');
+      showInfo();
+    } catch (error) {
+      setErrorMessage('Failed to copy address to clipboard.');
+      showError();
+    }
+  }, [receiveAddress, showError]);
 
   const refreshWalletList = useCallback(() => {
     setWalletList(listWallets());
@@ -84,10 +132,23 @@ export function AppProvider({
       walletList,
       refreshWalletList,
       hasWallet,
+      // Error handling
+      errorHappened,
+      errorMessage,
+      setErrorMessage,
+      showError,
+      // Info handling
+      showInfoMessage,
+      infoMessage,
+      setInfoMessage,
+      showInfo,
       capturing,
       setCapturing,
       refreshToken,
       refresh,
+      receiveAddress,
+      setReceiveAddress,
+      copyReceiverAddress,
     }),
     [
       route,
@@ -96,9 +157,21 @@ export function AppProvider({
       walletList,
       hasWallet,
       capturing,
+      errorHappened,
+      errorMessage,
+      setErrorMessage,
+      showError,
+      showInfoMessage,
+      infoMessage,
+      setInfoMessage,
+      showInfo,
+      setCapturing,
       refreshWalletList,
       refreshToken,
       refresh,
+      receiveAddress,
+      setReceiveAddress,
+      copyReceiverAddress,
     ],
   );
 
