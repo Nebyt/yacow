@@ -6,8 +6,7 @@ import { accountPublicKeyFromHex, deriveExternalAddress } from '../crypto/derive
 
 /** Receive page: address + QR (plan §3 Op 4). Placeholder for M0. */
 export function Receive(): React.ReactElement {
-  const { activeWallet, network } = useStore();
-  const [receiverAddr, setReceiverAddr] = useState<string | null>(null);
+  const { activeWallet, network, receiveAddress, setReceiveAddress } = useStore();
   const [qrCodeAddress, setQrCodeAddress] = useState<string | null>(null);
 
   useEffect(() => {
@@ -15,7 +14,7 @@ export function Receive(): React.ReactElement {
 
     const accPubkey = accountPublicKeyFromHex(activeWallet.accountPubKey);
     const receiveAddress = deriveExternalAddress(accPubkey, 0, network);
-    setReceiverAddr(receiveAddress);
+    setReceiveAddress(receiveAddress);
 
     void (async () => {
       const qrCodeAddress = await QRCode.toString(receiveAddress, { type: 'terminal' });
@@ -38,7 +37,7 @@ export function Receive(): React.ReactElement {
       <Text bold>Receive</Text>
 
       <Box marginTop={1} flexDirection="column" justifyContent="center" alignItems="center">
-        <Text color="cyan">{receiverAddr}</Text>
+        <Text color="cyan">{receiveAddress}</Text>
         <Text color="gray" italic>m/1852'/1815'/0'/0/0</Text>
         <Box marginTop={1}>
           <Text>{qrCodeAddress}</Text>

@@ -52,6 +52,42 @@ function Header({ network }: { network: NetworkName }): React.ReactElement {
   );
 }
 
+function ErrorBox({ message }: { message: string }): React.ReactElement {
+  return (
+    <Box
+      flexDirection="column"
+      justifyContent="center"
+      alignItems="center"
+    >
+      <Text bold color="red">{message}</Text>
+    </Box>
+  );
+}
+
+function InfoBox({ message }: { message: string }): React.ReactElement {
+  return (
+    <Box
+      flexDirection="column"
+      justifyContent="center"
+      alignItems="center"
+    >
+      <Text bold color="green">{message}</Text>
+    </Box>
+  );
+}
+
+function StubBox(): React.ReactElement {
+  return (
+    <Box
+      flexDirection="column"
+      justifyContent="center"
+      alignItems="center"
+    >
+      <Text color="green"> </Text>
+    </Box>
+  );
+}
+
 function hintsFor(route: string, hasWallet: boolean): Hint[] {
   // The provider gate is a gate: every other destination needs chain access,
   // so the only way out is finishing setup (or quitting). Decision 4.5.
@@ -86,6 +122,9 @@ function hintsFor(route: string, hasWallet: boolean): Hint[] {
     if (route === 'main') {
       hints.push({ key: 'R', label: 'refresh' });
     }
+    if (route === 'receive') {
+      hints.push({ key: 'enter', label: 'copy address' });
+    }
     hints.push(
       { key: 'm', label: 'main', to: 'main' },
       { key: 's', label: 'send', to: 'send' },
@@ -107,7 +146,7 @@ function hintsFor(route: string, hasWallet: boolean): Hint[] {
 
 function Shell(): React.ReactElement {
   const { exit } = useApp();
-  const { route, setRoute, network, hasWallet, capturing, refresh } = useStore();
+  const { route, setRoute, network, hasWallet, capturing, refresh, copyReceiverAddress, errorHappened, errorMessage, showInfoMessage, infoMessage } = useStore();
 
   const back = () => setRoute(hasWallet ? 'main' : 'onboarding');
 
@@ -134,7 +173,8 @@ function Shell(): React.ReactElement {
         if (input === 'r') return setRoute('restore');
       }
       if (hasWallet) {
-        if (input === 'R') return refresh(); // re-fetch chain data on the current page
+        if (input === 'R' && route === 'main') return refresh(); // re-fetch chain data on the current page
+        if (key.return && route === 'receive') return copyReceiverAddress(); // copy receive address to clipboard
         if (input === 'm') return setRoute('main');
         if (input === 's') return setRoute('send');
         if (input === 'r') return setRoute('receive');
@@ -181,6 +221,9 @@ function Shell(): React.ReactElement {
   return (
     <Box flexDirection="column" borderStyle="double" borderColor="gray" >
       <Header network={network} />
+      {errorHappened && <ErrorBox message={errorMessage || 'An error occurred.'} />}
+      {showInfoMessage && <InfoBox message={infoMessage || 'Info message.'} />}
+      {!errorHappened && !showInfoMessage && <StubBox />}
       <Box marginTop={1} width="100%">
         {body}
       </Box>
