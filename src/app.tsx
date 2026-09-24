@@ -25,9 +25,7 @@ function servedByLabel(provider: ChainProvider): string | null {
 
   const via = PROVIDER_LABELS[served];
 
-  return fallback.primaryCoolingDown === true
-    ? `${via} — primary unavailable`
-    : via;
+  return fallback.primaryCoolingDown === true ? `${via} — primary unavailable` : via;
 }
 
 function Header({ network }: { network: NetworkName }): React.ReactElement {
@@ -35,12 +33,7 @@ function Header({ network }: { network: NetworkName }): React.ReactElement {
   const servedBy = servedByLabel(provider);
 
   return (
-    <Box
-      justifyContent="space-between"
-      borderStyle="single"
-      borderColor="blue"
-      paddingX={1}
-    >
+    <Box justifyContent="space-between" borderStyle="single" borderColor="blue" paddingX={1}>
       <Text bold underline color="blue">
         YACOW
       </Text>
@@ -54,35 +47,27 @@ function Header({ network }: { network: NetworkName }): React.ReactElement {
 
 function ErrorBox({ message }: { message: string }): React.ReactElement {
   return (
-    <Box
-      flexDirection="column"
-      justifyContent="center"
-      alignItems="center"
-    >
-      <Text bold color="red">{message}</Text>
+    <Box flexDirection="column" justifyContent="center" alignItems="center">
+      <Text bold color="red">
+        {message}
+      </Text>
     </Box>
   );
 }
 
 function InfoBox({ message }: { message: string }): React.ReactElement {
   return (
-    <Box
-      flexDirection="column"
-      justifyContent="center"
-      alignItems="center"
-    >
-      <Text bold color="green">{message}</Text>
+    <Box flexDirection="column" justifyContent="center" alignItems="center">
+      <Text bold color="green">
+        {message}
+      </Text>
     </Box>
   );
 }
 
 function StubBox(): React.ReactElement {
   return (
-    <Box
-      flexDirection="column"
-      justifyContent="center"
-      alignItems="center"
-    >
+    <Box flexDirection="column" justifyContent="center" alignItems="center">
       <Text color="green"> </Text>
     </Box>
   );
@@ -147,7 +132,19 @@ function hintsFor(route: string, hasWallet: boolean): Hint[] {
 
 function Shell(): React.ReactElement {
   const { exit } = useApp();
-  const { route, setRoute, network, hasWallet, capturing, refresh, copyReceiverAddress, errorHappened, errorMessage, showInfoMessage, infoMessage } = useStore();
+  const {
+    route,
+    setRoute,
+    network,
+    hasWallet,
+    capturing,
+    refresh,
+    copyReceiverAddress,
+    errorHappened,
+    errorMessage,
+    showInfoMessage,
+    infoMessage,
+  } = useStore();
 
   const back = () => setRoute(hasWallet ? 'main' : 'onboarding');
 
@@ -220,7 +217,7 @@ function Shell(): React.ReactElement {
   }
 
   return (
-    <Box flexDirection="column" borderStyle="double" borderColor="gray" >
+    <Box flexDirection="column" borderStyle="double" borderColor="gray">
       <Header network={network} />
       {errorHappened && <ErrorBox message={errorMessage || 'An error occurred.'} />}
       {showInfoMessage && <InfoBox message={infoMessage || 'Info message.'} />}

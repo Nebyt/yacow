@@ -53,21 +53,27 @@ describe('error taxonomy', () => {
     expect(
       isRetryableProviderError(new ProviderUnavailableError('502', { provider: 'koios' })),
     ).toBe(true);
-    expect(isRetryableProviderError(new ProviderAuthError('bad key', { provider: 'blockfrost' })))
-      .toBe(false);
-    expect(isRetryableProviderError(new ProviderRequestError('bad address', { provider: 'koios' })))
-      .toBe(false);
+    expect(
+      isRetryableProviderError(new ProviderAuthError('bad key', { provider: 'blockfrost' })),
+    ).toBe(false);
+    expect(
+      isRetryableProviderError(new ProviderRequestError('bad address', { provider: 'koios' })),
+    ).toBe(false);
     expect(isRetryableProviderError(new Error('unrelated'))).toBe(false);
   });
 
   it('fails over on rate-limit, unavailable and auth, but not on our own bad request', () => {
-    expect(shouldFailover(new ProviderRateLimitError('429', { provider: 'blockfrost' }))).toBe(true);
+    expect(shouldFailover(new ProviderRateLimitError('429', { provider: 'blockfrost' }))).toBe(
+      true,
+    );
     expect(shouldFailover(new ProviderUnavailableError('down', { provider: 'blockfrost' }))).toBe(
       true,
     );
     // Decision 4.3: an expired key must not stop the wallet from reading chain data.
     expect(shouldFailover(new ProviderAuthError('403', { provider: 'blockfrost' }))).toBe(true);
-    expect(shouldFailover(new ProviderRequestError('malformed', { provider: 'koios' }))).toBe(false);
+    expect(shouldFailover(new ProviderRequestError('malformed', { provider: 'koios' }))).toBe(
+      false,
+    );
     expect(shouldFailover(new Error('unrelated'))).toBe(false);
   });
 

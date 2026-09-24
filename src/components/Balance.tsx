@@ -97,7 +97,9 @@ export function Balance({
             </Text>
           ))}
           {balance.tokens.length > 5 && (
-            <Text color="gray">{'  '}+{balance.tokens.length - 5} more</Text>
+            <Text color="gray">
+              {'  '}+{balance.tokens.length - 5} more
+            </Text>
           )}
         </Box>
       )}

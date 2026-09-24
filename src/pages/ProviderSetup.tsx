@@ -95,9 +95,7 @@ export function ProviderSetup({ choices, onDone }: ProviderSetupProps): React.Re
   return (
     <Box flexDirection="column">
       <Text bold>Connect to Cardano</Text>
-      <Text color="gray">
-        YACOW reads the chain through Blockfrost or Koios.
-      </Text>
+      <Text color="gray">YACOW reads the chain through Blockfrost or Koios.</Text>
 
       {step === 'choose' && (
         <Box flexDirection="column" marginTop={1}>

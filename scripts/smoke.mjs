@@ -178,8 +178,18 @@ const setupPage = (choices, network = 'preprod') =>
 check(
   'provider setup: fresh install offers both providers',
   setupPage([
-    { kind: 'add-key', provider: 'blockfrost', network: 'preprod', label: 'Add a Blockfrost key for Cardano Preprod' },
-    { kind: 'add-key', provider: 'koios', network: 'preprod', label: 'Add a Koios key for Cardano Preprod' },
+    {
+      kind: 'add-key',
+      provider: 'blockfrost',
+      network: 'preprod',
+      label: 'Add a Blockfrost key for Cardano Preprod',
+    },
+    {
+      kind: 'add-key',
+      provider: 'koios',
+      network: 'preprod',
+      label: 'Add a Koios key for Cardano Preprod',
+    },
   ]),
   ['Connect to Cardano', 'No provider is set up for', 'Cardano Preprod', 'Add a Blockfrost key'],
 );
@@ -188,8 +198,18 @@ check(
   'provider setup: unconfigured network offers the fallback and a way back',
   setupPage(
     [
-      { kind: 'use-provider', provider: 'koios', network: 'mainnet', label: 'Use Koios (key already set for mainnet)' },
-      { kind: 'add-key', provider: 'blockfrost', network: 'mainnet', label: 'Add a Blockfrost key for Cardano Mainnet' },
+      {
+        kind: 'use-provider',
+        provider: 'koios',
+        network: 'mainnet',
+        label: 'Use Koios (key already set for mainnet)',
+      },
+      {
+        kind: 'add-key',
+        provider: 'blockfrost',
+        network: 'mainnet',
+        label: 'Add a Blockfrost key for Cardano Mainnet',
+      },
       { kind: 'switch-network', network: 'preprod', label: 'Switch back to Cardano Preprod' },
     ],
     'mainnet',
@@ -199,7 +219,9 @@ check(
 
 // The gate must not offer any way to navigate away.
 {
-  const { lastFrame, unmount } = render(app({ initialRoute: 'providerSetup', initialWalletList: [] }));
+  const { lastFrame, unmount } = render(
+    app({ initialRoute: 'providerSetup', initialWalletList: [] }),
+  );
   const frame = lastFrame() ?? '';
   const ok =
     /\bq quit\b/.test(frame) &&
@@ -223,8 +245,24 @@ const ROWS = [
     roleLabel: 'primary',
     perNetwork: true,
     cells: [
-      { scope: 'mainnet', scopeLabel: 'Cardano Mainnet', network: 'mainnet', masked: 'mainnet****1234', isSet: true, fromEnv: false, usable: true },
-      { scope: 'preprod', scopeLabel: 'Cardano Preprod', network: 'preprod', masked: '(not set)', isSet: false, fromEnv: false, usable: false },
+      {
+        scope: 'mainnet',
+        scopeLabel: 'Cardano Mainnet',
+        network: 'mainnet',
+        masked: 'mainnet****1234',
+        isSet: true,
+        fromEnv: false,
+        usable: true,
+      },
+      {
+        scope: 'preprod',
+        scopeLabel: 'Cardano Preprod',
+        network: 'preprod',
+        masked: '(not set)',
+        isSet: false,
+        fromEnv: false,
+        usable: false,
+      },
     ],
   },
   {
@@ -235,7 +273,15 @@ const ROWS = [
     // One account-wide token, not one per network (decision 4.8).
     perNetwork: false,
     cells: [
-      { scope: 'all', scopeLabel: 'All networks', network: 'mainnet', masked: '(not set)', isSet: false, fromEnv: false, usable: true },
+      {
+        scope: 'all',
+        scopeLabel: 'All networks',
+        network: 'mainnet',
+        masked: '(not set)',
+        isSet: false,
+        fromEnv: false,
+        usable: true,
+      },
     ],
   },
 ];

@@ -57,8 +57,10 @@ export const DEFAULT_REQUESTS_PER_SECOND = 8;
 export const MAX_PAGES = 100;
 export const DEFAULT_HISTORY_LIMIT = 20;
 
-export interface BlockfrostConfig
-  extends Omit<HttpClientConfig, 'provider' | 'baseUrl' | 'headers'> {
+export interface BlockfrostConfig extends Omit<
+  HttpClientConfig,
+  'provider' | 'baseUrl' | 'headers'
+> {
   network: NetworkName;
   projectId: string;
   /** Requests in flight at once. */
@@ -288,7 +290,10 @@ export function createBlockfrostProvider(config: BlockfrostConfig): ChainProvide
   };
 
   /** Walk `?page=` until a short page comes back. */
-  async function allPages<T>(path: string, query: Record<string, string | number> = {}): Promise<T[]> {
+  async function allPages<T>(
+    path: string,
+    query: Record<string, string | number> = {},
+  ): Promise<T[]> {
     const out: T[] = [];
     for (let page = 1; page <= MAX_PAGES; page += 1) {
       const rows = await http.getJson<T[]>(path, {
@@ -477,7 +482,8 @@ export function assertKeyMatchesNetwork(projectId: string, network: NetworkName)
   const expected = BLOCKFROST_KEY_PREFIXES[network];
   if (projectId.startsWith(expected)) return;
   const actual =
-    Object.entries(BLOCKFROST_KEY_PREFIXES).find(([, prefix]) => projectId.startsWith(prefix))?.[0] ??
-    'unknown';
+    Object.entries(BLOCKFROST_KEY_PREFIXES).find(([, prefix]) =>
+      projectId.startsWith(prefix),
+    )?.[0] ?? 'unknown';
   throw new ProviderNetworkMismatchError({ provider: 'blockfrost', expected: network, actual });
 }

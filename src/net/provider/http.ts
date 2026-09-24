@@ -291,7 +291,8 @@ export function createHttpClient(config: HttpClientConfig): HttpClient {
   }
 
   async function request<T>(path: string, options: RequestOptions = {}): Promise<T | null> {
-    const method = options.method ?? (options.json === undefined && options.cbor === undefined ? 'GET' : 'POST');
+    const method =
+      options.method ?? (options.json === undefined && options.cbor === undefined ? 'GET' : 'POST');
     const url = buildUrl(baseUrl, path, options.query);
     const retries = options.retries ?? defaultRetries;
 
@@ -323,7 +324,9 @@ export function createHttpClient(config: HttpClientConfig): HttpClient {
     baseUrl,
     request,
     getJson: (path, options = {}) => request(path, { ...options, method: 'GET' }),
-    postJson: (path, body, options = {}) => request(path, { ...options, method: 'POST', json: body }),
-    postCbor: (path, body, options = {}) => request(path, { ...options, method: 'POST', cbor: body }),
+    postJson: (path, body, options = {}) =>
+      request(path, { ...options, method: 'POST', json: body }),
+    postCbor: (path, body, options = {}) =>
+      request(path, { ...options, method: 'POST', cbor: body }),
   };
 }

@@ -3,12 +3,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { MockAgent, fetch as undiciFetch } from 'undici';
 import { readProviders, setFallback, setPrimary, setProviderKey } from './providers.js';
-import {
-  makePrimary,
-  saveProviderKey,
-  setupChoices,
-  testProviderKey,
-} from './providerSetup.js';
+import { makePrimary, saveProviderKey, setupChoices, testProviderKey } from './providerSetup.js';
 
 const BF_MAINNET = 'mainnetABCDEFGHIJKLMNOPQRSTUV1234';
 const BF_PREPROD = 'preprodABCDEFGHIJKLMNOPQRSTUV5678';
@@ -156,12 +151,17 @@ describe('testProviderKey', () => {
     agent
       .get('https://cardano-preprod.blockfrost.io')
       .intercept({ path: '/api/v0/blocks/latest', method: 'GET' })
-      .reply(200, { slot: 1, height: 3_120_000, hash: 'h', epoch: 42, time: 5 }, {
-        headers: { 'content-type': 'application/json' },
-      });
+      .reply(
+        200,
+        { slot: 1, height: 3_120_000, hash: 'h', epoch: 42, time: 5 },
+        {
+          headers: { 'content-type': 'application/json' },
+        },
+      );
 
-    await expect(testProviderKey('blockfrost', 'preprod', BF_PREPROD, { fetchImpl })).resolves
-      .toMatchObject({ ok: true, message: expect.stringContaining('3120000') });
+    await expect(
+      testProviderKey('blockfrost', 'preprod', BF_PREPROD, { fetchImpl }),
+    ).resolves.toMatchObject({ ok: true, message: expect.stringContaining('3120000') });
   });
 
   it('names the chain mismatch when the key is for the other network', async () => {

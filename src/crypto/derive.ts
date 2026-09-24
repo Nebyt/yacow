@@ -1,9 +1,6 @@
 // CIP1852 key derivation + Shelley base-address construction.
 // Ports the derivation used in yoroi-extension plate.js / numbersConfig.js.
-import type {
-  Bip32PrivateKey,
-  Bip32PublicKey,
-} from '@emurgo/cardano-serialization-lib-nodejs';
+import type { Bip32PrivateKey, Bip32PublicKey } from '@emurgo/cardano-serialization-lib-nodejs';
 import { RustModule } from './rust.js';
 import { mnemonicToRootKey } from './mnemonic.js';
 import { getNetwork, type NetworkName } from '../config/networks.js';
@@ -35,7 +32,10 @@ export function accountPublicKeyFromHex(hex: string): Bip32PublicKey {
   return RustModule.CSL.Bip32PublicKey.from_bytes(Buffer.from(hex, 'hex'));
 }
 
-export function rewardAddressBech32FromAccountPublic(accountPublic: Bip32PublicKey, network: NetworkName): string {
+export function rewardAddressBech32FromAccountPublic(
+  accountPublic: Bip32PublicKey,
+  network: NetworkName,
+): string {
   const CSL = RustModule.CSL;
   const stakeKey = accountPublic.derive(ROLE_STAKING).derive(STAKING_INDEX).to_raw_key();
   const stakeCred = CSL.Credential.from_keyhash(stakeKey.hash());
@@ -78,10 +78,9 @@ export function deriveBaseAddress(mnemonic: string, opts: DerivePathOpts): strin
   );
 }
 
-export const deriveExternalAddress = (accountPublic: Bip32PublicKey, index: number = 0, network: NetworkName): string =>
-  baseAddressFromAccountPublic(
-    accountPublic,
-    ROLE_EXTERNAL,
-    index,
-    getNetwork(network).networkId,
-  );
+export const deriveExternalAddress = (
+  accountPublic: Bip32PublicKey,
+  index: number = 0,
+  network: NetworkName,
+): string =>
+  baseAddressFromAccountPublic(accountPublic, ROLE_EXTERNAL, index, getNetwork(network).networkId);

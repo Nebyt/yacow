@@ -26,13 +26,7 @@ export function PasswordInput({
     <Box flexDirection="column">
       <Box>
         <Text>{label}: </Text>
-        <TextInput
-          value={value}
-          onChange={onChange}
-          onSubmit={onSubmit}
-          mask="*"
-          focus={focus}
-        />
+        <TextInput value={value} onChange={onChange} onSubmit={onSubmit} mask="*" focus={focus} />
       </Box>
       {check != null && (
         <Text color={check.ok ? 'green' : 'yellow'}>

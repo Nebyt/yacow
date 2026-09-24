@@ -24,7 +24,10 @@ afterEach(async () => {
 // escape to the real Blockfrost. Passing undici's fetch with the mock agent as
 // its dispatcher keeps everything inside this module instance.
 const mockFetch = ((url: string | URL | Request, init?: RequestInit) =>
-  undiciFetch(url as string, { ...(init as Record<string, unknown>), dispatcher: agent })) as unknown as typeof fetch;
+  undiciFetch(url as string, {
+    ...(init as Record<string, unknown>),
+    dispatcher: agent,
+  })) as unknown as typeof fetch;
 
 function mock(): ReturnType<MockAgent['get']> {
   return agent.get(ORIGIN);
@@ -173,7 +176,10 @@ describe('addresses', () => {
   });
 
   it('sums quantities beyond Number.MAX_SAFE_INTEGER exactly', async () => {
-    reply('/addresses/addr_whale', { address: 'addr_whale', amount: [lovelace('9007199254740993')] });
+    reply('/addresses/addr_whale', {
+      address: 'addr_whale',
+      amount: [lovelace('9007199254740993')],
+    });
     reply('/addresses/addr_whale2', { address: 'addr_whale2', amount: [lovelace('2')] });
     await expect(
       provider().getBalanceForAddresses(['addr_whale', 'addr_whale2']),
@@ -288,7 +294,9 @@ describe('transactions', () => {
         { address: 'addr_in', amount: [lovelace('3000000')], collateral: false },
         { address: 'addr_collateral', amount: [lovelace('5000000')], collateral: true },
       ],
-      outputs: [{ address: 'addr_out', amount: [lovelace('2830000'), { unit: UNIT, quantity: '1' }] }],
+      outputs: [
+        { address: 'addr_out', amount: [lovelace('2830000'), { unit: UNIT, quantity: '1' }] },
+      ],
     });
 
     await expect(provider().getTransaction('tx1')).resolves.toEqual({

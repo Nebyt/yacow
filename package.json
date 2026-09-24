@@ -20,6 +20,8 @@
     "test": "NODE_ENV=jest bunx jest",
     "test:ui": "bun run smoke",
     "test:all": "bun run test && bun run smoke && bun run smoke:cli",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "clean": "rm -rf dist"
   },
   "dependencies": {
@@ -50,6 +52,7 @@
     "babel-plugin-transform-import-meta": "^2.3.3",
     "ink-testing-library": "^4.0.0",
     "jest": "^29.7.0",
+    "prettier": "^3.9.9",
     "typescript": "^5.4.5",
     "undici": "^8.10.1"
   }

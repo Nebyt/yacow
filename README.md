@@ -2,9 +2,9 @@
 
 **Yet Another Cardano Only Wallet.**
 
-A lightweight interactive terminal wallet for Cardano, built with [Ink](https://github.com/vadimdemedes/ink). Run `yacow` and navigate pages (Onboarding / Wallets / Dashboard / Send / Receive / Network) with arrow keys and single-key shortcuts — like Claude Code or lazygit.
+A lightweight interactive terminal wallet for Cardano. The locked UI stack is [OpenTUI](https://github.com/anomalyco/opentui) (`@opentui/react`); the current tree still runs on Ink until that migration. Run `yacow` and navigate pages (Onboarding / Wallets / Dashboard / Send / Receive / Network / Settings) with arrow keys and single-key shortcuts — like Claude Code, lazygit or OpenCode.
 
-> Status: app shell, wallet create/restore, keystore, network switching, the chain-data provider layer (Blockfrost / Koios) and the dashboard balance are in place, plus the `paper-addresses` tool below. Transactions, receive and send are still to come.
+> Status: app shell, wallet create/restore, keystore, network switching, Blockfrost / Koios provider layer, dashboard **balance + stake address + pool delegation**, and **Receive** (address + QR + clipboard copy) are in place. Transactions list and send are still to come. There is **no** paper-wallet tool.
 
 ## Run
 
@@ -52,23 +52,23 @@ bun install
 bun run build      # tsc -> dist/
 bun run start      # run the built CLI
 bun run test       # jest (engine tests)
-bun run smoke      # build + pure-node Ink render smoke
-bun run smoke:cli  # build + subcommand end-to-end checks (spawns dist/cli.js)
-bun run test:all   # all three
+bun run smoke      # build + UI render smoke
+bun run test:all      # jest + smoke
+bun run format        # Prettier write (decision 2.7)
+bun run format:check  # Prettier check, no writes
 ```
 
 ## Layout
 
 - `src/config/` — network definitions (mainnet / preprod), app settings, provider credentials
-- `src/crypto/` — CSL (WASM) loader; mnemonic, CIP1852 + Byron derivation, plate, paper wallets
+- `src/crypto/` — CSL (WASM) loader; mnemonic, CIP1852 derivation, plate
 - `src/net/` — the provider layer (`provider/`: Blockfrost + Koios adapters behind one `ChainProvider`, with failover), address discovery, protocol parameters
 - `src/security/` — password strength, secret buffers, file permissions
-- `src/wallet/` — keystore, balance, history (M3), tx building (M5)
-- `src/commands/` — non-interactive subcommands (see Tools above)
-- `src/pages/`, `src/components/`, `src/state/` — the Ink UI
+- `src/wallet/` — keystore, balance; history (M3) and tx building (M5) still planned
+- `src/pages/`, `src/components/`, `src/state/` — the TUI (Ink today; OpenTUI per decision 2.1)
 
-Engine modules (`config/ crypto/ net/ security/ wallet/`) are UI-independent and unit-tested with Jest; pages/components are tested with `ink-testing-library`.
+Engine modules (`config/ crypto/ net/ security/ wallet/`) are UI-independent and unit-tested with Jest; pages/components are covered by the render smoke while the Ink tree remains.
 
 ## Shortcuts
 
-`↑↓` move · `Enter` confirm · `Esc` back · `m` main · `s` send · `r` receive · `w` wallets · `n` network · `,` settings · `R` refresh · `q` quit
+`↑↓` move · `Enter` confirm (on Receive: copy address) · `Esc` back · `m` main · `s` send · `r` receive · `w` wallets · `n` network · `,` settings · `R` refresh · `q` quit
