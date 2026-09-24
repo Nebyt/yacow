@@ -8,7 +8,6 @@
         "@emurgo/cardano-serialization-lib-nodejs": "14.1.2",
         "@emurgo/cip4-js": "1.0.5",
         "bip39": "3.1.0",
-        "cardano-wallet": "1.2.2",
         "clipboardy": "^5.3.2",
         "commander": "12.1.0",
         "ink": "5.1.0",
@@ -418,8 +417,6 @@
     "camelcase": ["camelcase@5.3.1", "", {}, "sha512-L28STB170nwWS63UjtlEOE3dldQApaJXZkOI1uMFfzf3rRuPegHaHesyee+YxQ+W6SvRDQV6UrdOdRiR153wJg=="],
 
     "caniuse-lite": ["caniuse-lite@1.0.30001810", "", {}, "sha512-TITQPUkaz+aVk5GL6NhOdwk1aEaNTSDPsGFWrTuhKGtjTF70jL/Oht2W4c6rXUe5fu7Ie19VIahAXHIIiWWNeg=="],
-
-    "cardano-wallet": ["cardano-wallet@1.2.2", "", {}, "sha512-G3nq0CDOQLph6cdeDj4Ienkjf0WTJOC5f8mnxgi8BGO68Qx9oCLjK6gIwJr2WXisCUTK+m21KvLQxHuw1zEmug=="],
 
     "chalk": ["chalk@4.1.2", "", { "dependencies": { "ansi-styles": "^4.1.0", "supports-color": "^7.1.0" } }, "sha512-oKnbhFyRIXpUuez8iBMmyEa4nbj4IOQyuhc/wy9kY7/WVPcwIO9VA668Pu8RkO7+0G76SLROeyw9CpQ061i4mA=="],
 

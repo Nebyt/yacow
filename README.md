@@ -45,46 +45,6 @@ Press `,` at any time for **Settings**, which shows every key as a masked cell �
 
 Prefer not to build? `bun run smoke` prints the rendered screens non-interactively (used by the tests).
 
-## Tools (non-interactive commands)
-
-`yacow <command>` runs a one-shot tool instead of the full-screen app, so it works over pipes, in scripts and over SSH. `yacow --help` lists the commands.
-
-### `paper-addresses` — Byron addresses of a Yoroi paper wallet
-
-Recovers the first Byron (base58, `Ae2…` / `FHnt…`) receive addresses of a **Yoroi paper wallet** (the 21-word phrase + paper password printed on the paper), so you can look up what is still sitting on it — in an explorer, or with any other tool — without importing it into a wallet.
-
-Read-only: nothing is written to disk, and no keystore is created or touched.
-
-```bash
-yacow paper-addresses                          # prompts, 10 mainnet addresses
-yacow paper-addresses --count 20               # more addresses
-yacow paper-addresses --network preprod        # testnet encoding
-yacow paper-addresses --json                   # machine-readable
-```
-
-| Flag | Default | Meaning |
-| --- | --- | --- |
-| `-n, --network <name>` | `mainnet` | `mainnet` or `preprod`. Paper wallets are mainnet-era; the same keys just encode differently per network. |
-| `-c, --count <n>` | `10` | How many addresses (1–100). |
-| `-a, --account <n>` | `0` | BIP44 account index (`44'/1815'/<n>'`). |
-| `--json` | off | Print JSON on stdout instead of a table. |
-| `--phrase-file <path>` | — | Read phrase (line 1) and paper password (line 2) from a file. |
-| `--stdin` | — | Read phrase (line 1) and paper password (line 2) from stdin. |
-
-The phrase and password are **never** taken as command-line flags — argv is visible to `ps` and lands in shell history. Interactively, the phrase is echoed (typing 21 words blind is unusable) and the password is masked; use `--stdin` or `--phrase-file` to keep both out of the terminal scrollback. The recovered 15-word phrase is never printed.
-
-Prompts, warnings and errors go to **stderr**; the result goes to **stdout**, so `--json` pipes cleanly:
-
-```bash
-printf '%s\n%s\n' "$PAPER_PHRASE" "$PAPER_PASSWORD" \
-  | yacow paper-addresses --stdin --json --count 5 \
-  | jq -r '.addresses[].address'
-```
-
-**A wrong paper password does not fail.** Unscrambling succeeds with any password and hands back a different (empty) wallet, so the addresses will look perfectly valid. The command prints the wallet's CIP4 plate (e.g. `PDED-7795`) for exactly this reason — it is the same plate Yoroi shows when restoring that paper wallet, so compare the two before trusting the addresses.
-
-Addresses follow `44'/1815'/account'/0/i` (external chain). Change addresses (`…/1/i`) are not printed.
-
 ## Develop
 
 ```bash

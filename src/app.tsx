@@ -123,7 +123,7 @@ function hintsFor(route: string, hasWallet: boolean): Hint[] {
       hints.push({ key: 'R', label: 'refresh' });
     }
     if (route === 'receive') {
-      hints.push({ key: 'enter', label: 'copy address' });
+      hints.push({ key: 'Enter', label: 'copy address' });
     }
     hints.push(
       { key: 'm', label: 'main', to: 'main' },
@@ -141,6 +141,7 @@ function hintsFor(route: string, hasWallet: boolean): Hint[] {
     hints.push({ key: 'esc', label: 'back' });
   }
   hints.push({ key: 'q', label: 'quit' });
+  // Drop any hints that point to the current route (e.g. no "m main" on the dashboard).
   return hints.filter((h) => h.to !== route).map(({ key, label }) => ({ key, label }));
 }
 

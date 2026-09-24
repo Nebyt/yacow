@@ -26,7 +26,6 @@
     "@emurgo/cardano-serialization-lib-nodejs": "14.1.2",
     "@emurgo/cip4-js": "1.0.5",
     "bip39": "3.1.0",
-    "cardano-wallet": "1.2.2",
     "clipboardy": "^5.3.2",
     "commander": "12.1.0",
     "ink": "5.1.0",
