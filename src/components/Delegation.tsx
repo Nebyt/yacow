@@ -1,11 +1,12 @@
-import { Box, Text } from 'ink';
-import { ActiveWallet } from '../state/store.js';
-import { NetworkName } from '../config/networks.js';
-import { AccountState, ChainProvider, PoolInfo } from '../net/provider/types.js';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
+import type { ActiveWallet } from '../state/store.js';
+import type { NetworkName } from '../config/networks.js';
+import type { AccountState, ChainProvider, PoolInfo } from '../net/provider/types.js';
 import { getProvider } from '../net/provider/registry.js';
 import { accountPublicKeyFromHex, rewardAddressBech32FromAccountPublic } from '../crypto/derive.js';
-import Spinner from 'ink-spinner';
+import { Working } from './Working.js';
+import { ChainError } from './Page.js';
+import { ACCENT, INFO } from './theme.js';
 
 export interface DelegationProps {
   wallet: ActiveWallet;
@@ -22,7 +23,7 @@ export function Delegation({
   refreshToken = 0,
   provider,
   accountState: injected,
-}: DelegationProps): React.ReactElement {
+}: DelegationProps): ReactNode {
   const [stakeAddress, setStakeAddress] = useState<string | null>(null);
   const [accountState, setAccountState] = useState<AccountState | null>(injected ?? null);
   const [poolInfo, setPoolInfo] = useState<PoolInfo | null>(null);
@@ -40,20 +41,21 @@ export function Delegation({
       try {
         const chain = provider ?? getProvider(network);
 
-        const stakeAddress = rewardAddressBech32FromAccountPublic(
+        const nextStake = rewardAddressBech32FromAccountPublic(
           accountPublicKeyFromHex(wallet.accountPubKey),
           network,
         );
-        setStakeAddress(stakeAddress);
+        setStakeAddress(nextStake);
 
-        const result = await chain.getAccountState(stakeAddress);
+        const result = await chain.getAccountState(nextStake);
+        let nextPool: PoolInfo | null = null;
         if (result?.delegatedPool) {
-          const poolInfoResult = await chain.getPoolInfo(result.delegatedPool);
-          setPoolInfo(poolInfoResult);
+          nextPool = await chain.getPoolInfo(result.delegatedPool);
         }
 
         if (cancelled) return;
 
+        setPoolInfo(nextPool);
         setAccountState(result);
       } catch (err) {
         if (!cancelled) {
@@ -70,40 +72,24 @@ export function Delegation({
   }, [wallet.accountPubKey, network, refreshToken, provider, injected]);
 
   if (loading) {
-    return (
-      <Box>
-        <Text color="cyan">
-          <Spinner type="dots" />
-        </Text>
-        <Text> Loading account state…</Text>
-      </Box>
-    );
+    return <Working label="Loading account state…" />;
   }
 
   if (error != null) {
-    return (
-      <Box flexDirection="column">
-        <Text color="red">Account state unavailable: {error}</Text>
-        <Text color="gray">Press R to retry, or , to check your providers.</Text>
-      </Box>
-    );
+    return <ChainError subject="Account state" error={error} />;
   }
 
   return (
-    <Box marginTop={1} flexDirection="column">
-      <Text color="cyan" bold>
-        {stakeAddress}
-      </Text>
+    <box marginTop={1} flexDirection="column">
+      <text fg={INFO}>
+        <strong>{stakeAddress}</strong>
+      </text>
       {accountState?.delegatedPool && (
-        <Box>
-          <Text color="blue" bold>
-            {accountState.delegatedPool + ' '}
-          </Text>
-          {poolInfo && (
-            <Text color="blueBright">{'[' + poolInfo.ticker + '] ' + poolInfo.name}</Text>
-          )}
-        </Box>
+        <text fg={ACCENT}>
+          <strong>{accountState.delegatedPool} </strong>
+          {poolInfo != null ? `[${poolInfo.ticker}] ${poolInfo.name}` : ''}
+        </text>
       )}
-    </Box>
+    </box>
   );
 }

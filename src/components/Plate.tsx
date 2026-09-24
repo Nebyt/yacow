@@ -1,18 +1,15 @@
-import React from 'react';
-import { Box, Text } from 'ink';
+import type { ReactNode } from 'react';
 import type { ActiveWallet } from '../state/store.js';
+import { FG, INFO } from './theme.js';
 
 /** Wallet identity line: name + CIP4 plate label + the network it's viewed on. */
-export function Plate({ wallet }: { wallet: ActiveWallet }): React.ReactElement {
+export function Plate({ wallet }: { wallet: ActiveWallet }): ReactNode {
   return (
-    <Box flexDirection="column">
-      <Box>
-        <Text bold>{wallet.name}</Text>
-        <Text> · </Text>
-        <Text color="cyan" bold>
-          {wallet.plate.textPart}
-        </Text>
-      </Box>
-    </Box>
+    <text fg={FG}>
+      <strong>{wallet.name}</strong> ·{' '}
+      <span fg={INFO}>
+        <strong>{wallet.plate.textPart}</strong>
+      </span>
+    </text>
   );
 }

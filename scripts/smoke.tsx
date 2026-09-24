@@ -1,44 +1,65 @@
-// UI render tests for the Ink app, in pure-node ESM against the tsc build.
+/** @jsxImportSource @opentui/react */
+// UI render tests against OpenTUI's in-memory test renderer (decision 5.1).
 //
-// Two constraints shape this harness:
-//  - jest can't load Ink 5's ESM `yoga-layout` (top-level await + import.meta),
-//    so UI runs here under node's native ESM.
-//  - `ink-testing-library`'s mock stdin does NOT deliver keystrokes to Ink 5's
-//    `useInput` in this environment, so we can't simulate key presses. Instead
-//    we mount each page directly via `initialRoute` and render leaf components
-//    in isolation. Interactive transitions are verified by running the real
-//    binary (`bun run start`) or the optional node-pty e2e (M6).
-import React from 'react';
-import { render } from 'ink-testing-library';
-import { App } from '../dist/app.js';
-import { PasswordInput } from '../dist/components/PasswordInput.js';
-import { ProviderSetup } from '../dist/pages/ProviderSetup.js';
-import { Settings } from '../dist/pages/Settings.js';
-import { Balance } from '../dist/components/Balance.js';
-import { AppProvider } from '../dist/state/store.js';
-import { RustModule } from '../dist/crypto/rust.js';
-
+// Engine tests stay on jest. Keystroke-driven flows are still manual (5.2)
+// until a node-pty e2e lands (M6). We mount pages via initialRoute / injected
+// props and assert the captured character frame.
+import { testRender } from '@opentui/react/test-utils';
+import type { ReactNode } from 'react';
+import { App } from '../src/app.tsx';
+import { PasswordInput } from '../src/components/PasswordInput.tsx';
+import { WalletSetup } from '../src/components/WalletSetup.tsx';
+import { ProviderSetup } from '../src/pages/ProviderSetup.tsx';
+import { Settings } from '../src/pages/Settings.tsx';
+import { Balance } from '../src/components/Balance.tsx';
+import { AppProvider } from '../src/state/store.tsx';
+import { RustModule } from '../src/crypto/rust.ts';
+import { mnemonicToRootKey } from '../src/crypto/mnemonic.ts';
+import { accountPublicKeyHex } from '../src/crypto/derive.ts';
 await RustModule.load();
 
-// The UI smoke run must never reach the network: the dashboard mounts the real
-// Balance component, which would otherwise call whatever provider the developer
-// has configured in ~/.yacow. Any accidental request fails fast instead.
+// The same golden phrase the crypto tests use; its plate is EHKL-5865. Pages
+// that derive an address (Receive) need a key that is a real curve point.
+const FIXED_PHRASE =
+  'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon address';
+
+const origError = console.error;
+console.error = (...args: unknown[]) => {
+  const first = String(args[0] ?? '');
+  if (first.includes('not wrapped in act')) return;
+  origError(...args);
+};
+
 globalThis.fetch = async () => {
   throw new Error('smoke: network access is disabled');
 };
 
 const ACTIVE = {
   name: 'my-wallet',
-  accountPubKey: 'ab'.repeat(64),
+  accountPubKey: accountPublicKeyHex(mnemonicToRootKey(FIXED_PHRASE)),
   plate: { textPart: 'EHKL-5865', imagePart: 'x'.repeat(128) },
 };
 
 let failures = 0;
-function check(name, element, expected) {
-  const { lastFrame, unmount } = render(element);
-  const frame = lastFrame() ?? '';
+
+async function frameOf(node: ReactNode, width = 100, height = 40): Promise<string> {
+  const setup = await testRender(node, { width, height });
+  try {
+    await setup.flush();
+    return setup.captureCharFrame();
+  } finally {
+    setup.renderer.destroy();
+  }
+}
+
+async function check(
+  name: string,
+  element: ReactNode,
+  expected: string[],
+  height?: number,
+): Promise<void> {
+  const frame = await frameOf(element, 100, height);
   const missing = expected.filter((s) => !frame.includes(s));
-  unmount();
   if (missing.length === 0) {
     console.log(`PASS  ${name}`);
   } else {
@@ -48,65 +69,68 @@ function check(name, element, expected) {
   }
 }
 
-const app = (props) => React.createElement(App, props);
+const app = (props: Parameters<typeof App>[0]) => <App {...props} />;
 
-check('onboarding (no wallet)', app({ initialWalletList: [], initialActiveWallet: null }), [
+await check('onboarding (no wallet)', app({ initialWalletList: [], initialActiveWallet: null }), [
   'YACOW',
   'Create a new wallet',
   'quit',
 ]);
 
-check(
+await check(
   'dashboard shows plate',
   app({ initialWalletList: ['my-wallet'], initialActiveWallet: ACTIVE }),
   ['my-wallet', 'EHKL-5865', 'send', 'wallets'],
 );
 
-check('create: reveal recovery phrase', app({ initialRoute: 'create', initialWalletList: [] }), [
-  'recovery phrase',
-  ' 1.',
-  'Press Enter',
-]);
+await check(
+  'create: reveal recovery phrase',
+  app({ initialRoute: 'create', initialWalletList: [] }),
+  ['recovery phrase', ' 1.', 'Press Enter'],
+);
 
-check('restore: phrase entry', app({ initialRoute: 'restore', initialWalletList: [] }), [
+await check('restore: phrase entry', app({ initialRoute: 'restore', initialWalletList: [] }), [
   'recovery phrase',
   'Phrase:',
 ]);
 
-check(
+await check(
+  'shared wallet setup starts with the name field',
+  <AppProvider initialWalletList={[]} initialActiveWallet={null}>
+    <WalletSetup operation="create" mnemonic={FIXED_PHRASE} />
+  </AppProvider>,
+  ['Create Wallet — name', 'Wallet name:'],
+);
+
+await check(
   'wallets list',
   app({ initialRoute: 'wallets', initialWalletList: ['alpha'], initialActiveWallet: ACTIVE }),
   ['alpha', 'Create a new wallet', 'Restore a wallet'],
 );
 
-check('network page', app({ initialRoute: 'network', initialWalletList: [] }), [
+await check('network page', app({ initialRoute: 'network', initialWalletList: [] }), [
   'Cardano Mainnet',
   'Cardano Preprod',
   '(current)',
 ]);
 
-// backlog #6: Create/Restore footers must not offer wallets/network shortcuts
 {
-  const { lastFrame, unmount } = render(app({ initialRoute: 'create', initialWalletList: [] }));
-  const frame = lastFrame() ?? '';
+  const frame = await frameOf(app({ initialRoute: 'create', initialWalletList: [] }));
   const ok = frame.includes('esc back') && !/\bwallets\b/.test(frame) && !/\bnetwork\b/.test(frame);
   console.log(`${ok ? 'PASS' : 'FAIL'}  create footer is minimal (esc/quit only)`);
   if (!ok) {
     failures++;
     console.error(`--- frame ---\n${frame}\n`);
   }
-  unmount();
 }
 
-// onboarding footer must be the fixed set even if wallets exist (no dup 'r' key)
 {
-  const warnings = [];
+  const warnings: string[] = [];
   const origErr = console.error;
-  console.error = (...a) => warnings.push(a.join(' '));
-  const { lastFrame, unmount } = render(
+  console.error = (...a: unknown[]) => warnings.push(a.join(' '));
+  const frame = await frameOf(
     app({ initialRoute: 'onboarding', initialWalletList: ['w1'], initialActiveWallet: ACTIVE }),
   );
-  const frame = lastFrame() ?? '';
   console.error = origErr;
   const noDupKeyWarn = !warnings.some((w) => w.includes('same key'));
   const noWalletNav = !/\bs send\b/.test(frame) && !/\bm main\b/.test(frame);
@@ -116,66 +140,69 @@ check('network page', app({ initialRoute: 'network', initialWalletList: [] }), [
     failures++;
     console.error(`warnings=${JSON.stringify(warnings)}\n--- frame ---\n${frame}\n`);
   }
-  unmount();
 }
 
-// wallets are network-agnostic: the header follows the global network, and the
-// same active wallet is shown on whichever network is selected
-check(
+await check(
   'header shows the global network (mainnet)',
   app({ initialWalletList: ['w1'], initialActiveWallet: ACTIVE, initialNetwork: 'mainnet' }),
   ['Cardano Mainnet', 'my-wallet', 'EHKL-5865'],
 );
-check(
+await check(
   'same wallet shown on preprod',
   app({ initialWalletList: ['w1'], initialActiveWallet: ACTIVE, initialNetwork: 'preprod' }),
   ['Cardano Preprod', 'my-wallet', 'EHKL-5865'],
 );
 
-// footer omits the current page's own shortcut
 {
-  const { lastFrame, unmount } = render(
-    app({ initialWalletList: ['w'], initialActiveWallet: ACTIVE }),
-  );
-  const frame = lastFrame() ?? '';
+  const frame = await frameOf(app({ initialWalletList: ['w'], initialActiveWallet: ACTIVE }));
   const ok = !/\bm main\b/.test(frame) && /\bs send\b/.test(frame);
   console.log(`${ok ? 'PASS' : 'FAIL'}  main footer omits "m main"`);
   if (!ok) {
     failures++;
     console.error(`--- frame ---\n${frame}\n`);
   }
-  unmount();
 }
 {
-  const { lastFrame, unmount } = render(app({ initialRoute: 'network', initialWalletList: [] }));
-  const frame = lastFrame() ?? '';
+  const frame = await frameOf(app({ initialRoute: 'network', initialWalletList: [] }));
   const ok = !/\bn network\b/.test(frame) && /\bw wallets\b/.test(frame);
   console.log(`${ok ? 'PASS' : 'FAIL'}  network footer omits "n network"`);
   if (!ok) {
     failures++;
     console.error(`--- frame ---\n${frame}\n`);
   }
-  unmount();
 }
 
-// backlog #3: Wallets list offers a remove option when wallets exist
-check(
+// Receive once took the whole page down when it rendered its QR. The symbol
+// itself is covered by src/components/qrMatrix.test.ts; this just asserts the
+// page mounts. It needs a tall viewport — the QR alone is over 50 rows.
+await check(
+  'receive: address, path and QR render',
+  app({ initialRoute: 'receive', initialWalletList: ['my-wallet'], initialActiveWallet: ACTIVE }),
+  ['Receive', 'addr_test1', "m/1852'/1815'/0'/0/0"],
+  70,
+);
+
+// A QR that does not fit used to be squeezed on top of the address row.
+await check(
+  'receive: short terminal keeps the address readable',
+  app({ initialRoute: 'receive', initialWalletList: ['my-wallet'], initialActiveWallet: ACTIVE }),
+  ['addr_test1', "m/1852'/1815'/0'/0/0", 'Resize to'],
+  20,
+);
+
+await check(
   'wallets: remove option present',
   app({ initialRoute: 'wallets', initialWalletList: ['alpha'], initialActiveWallet: ACTIVE }),
   ['Remove a wallet'],
 );
 
-// --- provider gate (plan §12.5, decisions 4.5 / 4.9) ------------------------
-// The page is mounted directly with injected choices so the smoke run never
-// reads (or depends on) the developer's real ~/.yacow/providers.json.
-const setupPage = (choices, network = 'preprod') =>
-  React.createElement(
-    AppProvider,
-    { initialRoute: 'providerSetup', initialNetwork: network, initialWalletList: [] },
-    React.createElement(ProviderSetup, { choices, onDone: () => {} }),
-  );
+const setupPage = (choices: unknown[], network: 'mainnet' | 'preprod' = 'preprod') => (
+  <AppProvider initialRoute="providerSetup" initialNetwork={network} initialWalletList={[]}>
+    <ProviderSetup choices={choices as never} onDone={() => {}} />
+  </AppProvider>
+);
 
-check(
+await check(
   'provider setup: fresh install offers both providers',
   setupPage([
     {
@@ -194,7 +221,7 @@ check(
   ['Connect to Cardano', 'No provider is set up for', 'Cardano Preprod', 'Add a Blockfrost key'],
 );
 
-check(
+await check(
   'provider setup: unconfigured network offers the fallback and a way back',
   setupPage(
     [
@@ -217,12 +244,8 @@ check(
   ['Cardano Mainnet', 'Use Koios', 'Add a Blockfrost key', 'Switch back to Cardano Preprod'],
 );
 
-// The gate must not offer any way to navigate away.
 {
-  const { lastFrame, unmount } = render(
-    app({ initialRoute: 'providerSetup', initialWalletList: [] }),
-  );
-  const frame = lastFrame() ?? '';
+  const frame = await frameOf(app({ initialRoute: 'providerSetup', initialWalletList: [] }));
   const ok =
     /\bq quit\b/.test(frame) &&
     !/\bw wallets\b/.test(frame) &&
@@ -233,10 +256,8 @@ check(
     failures++;
     console.error(`--- frame ---\n${frame}\n`);
   }
-  unmount();
 }
 
-// --- settings: provider x network grid (plan §12.6, decision 4.8) -----------
 const ROWS = [
   {
     provider: 'blockfrost',
@@ -270,7 +291,6 @@ const ROWS = [
     label: 'Koios',
     role: 'fallback',
     roleLabel: 'fallback (used when primary is unavailable)',
-    // One account-wide token, not one per network (decision 4.8).
     perNetwork: false,
     cells: [
       {
@@ -286,14 +306,13 @@ const ROWS = [
   },
 ];
 
-const settingsPage = (network = 'preprod') =>
-  React.createElement(
-    AppProvider,
-    { initialRoute: 'settings', initialNetwork: network, initialWalletList: [] },
-    React.createElement(Settings, { rows: ROWS, summary: 'Cardano Preprod served by Blockfrost.' }),
-  );
+const settingsPage = (network: 'mainnet' | 'preprod' = 'preprod') => (
+  <AppProvider initialRoute="settings" initialNetwork={network} initialWalletList={[]}>
+    <Settings rows={ROWS as never} summary="Cardano Preprod served by Blockfrost." />
+  </AppProvider>
+);
 
-check('settings: grid shows both networks per provider', settingsPage(), [
+await check('settings: grid shows both networks per provider', settingsPage(), [
   'Settings — data providers',
   'Blockfrost',
   'primary',
@@ -303,41 +322,32 @@ check('settings: grid shows both networks per provider', settingsPage(), [
   '(active)',
 ]);
 
-check('settings: offers per-network key actions and role swap', settingsPage(), [
+await check('settings: offers per-network key actions and role swap', settingsPage(), [
   'Add Blockfrost key for Cardano Preprod',
   'Replace Blockfrost key for Cardano Mainnet',
   'Remove Blockfrost key for Cardano Mainnet',
-  // Koios is account-wide: one entry, no network in the label.
   'Add Koios token (all networks)',
   'Swap roles (Koios becomes primary)',
   'Test connection on Cardano Preprod',
 ]);
 
-check('settings: Koios shows one account-wide row, not one per network', settingsPage(), [
+await check('settings: Koios shows one account-wide row, not one per network', settingsPage(), [
   'All networks: not set',
 ]);
 
-// the masked cell must never widen into a real key
 {
-  const { lastFrame, unmount } = render(settingsPage());
-  const frame = lastFrame() ?? '';
+  const frame = await frameOf(settingsPage());
   const ok = !/mainnetABCDEF/.test(frame) && /mainnet\*\*\*\*1234/.test(frame);
   console.log(`${ok ? 'PASS' : 'FAIL'}  settings keys stay masked`);
   if (!ok) {
     failures++;
     console.error(`--- frame ---\n${frame}\n`);
   }
-  unmount();
 }
 
-// the settings shortcut is offered everywhere except on settings itself
 {
-  const onMain = render(app({ initialWalletList: ['w1'], initialActiveWallet: ACTIVE }));
-  const mainFrame = onMain.lastFrame() ?? '';
-  onMain.unmount();
-  const onSettings = render(app({ initialRoute: 'settings', initialWalletList: [] }));
-  const settingsFrame = onSettings.lastFrame() ?? '';
-  onSettings.unmount();
+  const mainFrame = await frameOf(app({ initialWalletList: ['w1'], initialActiveWallet: ACTIVE }));
+  const settingsFrame = await frameOf(app({ initialRoute: 'settings', initialWalletList: [] }));
   const ok = /, settings/.test(mainFrame) && !/, settings/.test(settingsFrame);
   console.log(`${ok ? 'PASS' : 'FAIL'}  footer offers ", settings" except on settings`);
   if (!ok) {
@@ -346,8 +356,6 @@ check('settings: Koios shows one account-wide row, not one per network', setting
   }
 }
 
-// --- dashboard balance (plan §12.7) -----------------------------------------
-// Injected balance: the smoke run must never touch the network or the user's keys.
 const BALANCE = {
   lovelace: '4500000',
   ada: '4.5',
@@ -359,46 +367,31 @@ const BALANCE = {
   nextUnusedAddress: 'addr_test1...',
 };
 
-check(
-  'balance shows ADA, tokens and which provider served it',
-  React.createElement(Balance, {
-    wallet: ACTIVE,
-    network: 'preprod',
-    balance: BALANCE,
-    servedBy: 'via Koios — primary unavailable',
-  }),
-  ['4.5 ADA', 'Tokens:', '5 MILK', '3 HOSKY', 'via Koios — primary unavailable'],
+await check(
+  'balance shows ADA and tokens',
+  <Balance wallet={ACTIVE} network="preprod" balance={BALANCE} />,
+  ['4.5 ADA', 'Tokens:', '5 MILK', '3 HOSKY'],
 );
 
-check(
+await check(
   'balance with no tokens shows only ADA',
-  React.createElement(Balance, {
-    wallet: ACTIVE,
-    network: 'preprod',
-    balance: { ...BALANCE, tokens: [] },
-    servedBy: 'via Blockfrost',
-  }),
-  ['4.5 ADA', 'via Blockfrost'],
+  <Balance wallet={ACTIVE} network="preprod" balance={{ ...BALANCE, tokens: [] }} />,
+  ['4.5 ADA'],
 );
 
-// dashboard offers the refresh shortcut once a wallet is active
 {
-  const { lastFrame, unmount } = render(
-    app({ initialWalletList: ['w1'], initialActiveWallet: ACTIVE }),
-  );
-  const frame = lastFrame() ?? '';
+  const frame = await frameOf(app({ initialWalletList: ['w1'], initialActiveWallet: ACTIVE }));
   const ok = /R refresh/.test(frame) && /EHKL-5865/.test(frame);
   console.log(`${ok ? 'PASS' : 'FAIL'}  dashboard mounts balance + refresh hint`);
   if (!ok) {
     failures++;
     console.error(`--- frame ---\n${frame}\n`);
   }
-  unmount();
 }
 
-check(
+await check(
   'password input shows strength meter',
-  React.createElement(PasswordInput, { value: 'abc', onChange: () => {}, showStrength: true }),
+  <PasswordInput value="abc" onChange={() => {}} showStrength />,
   ['strength'],
 );
 

@@ -1,6 +1,6 @@
-#!/usr/bin/env node
-import React from 'react';
-import { render } from 'ink';
+#!/usr/bin/env bun
+import { createCliRenderer } from '@opentui/core';
+import { createRoot } from '@opentui/react';
 import { App } from './app.js';
 import { RustModule } from './crypto/rust.js';
 import { ensureSecureDir, DEFAULT_HOME_DIR } from './security/fsPerms.js';
@@ -38,7 +38,12 @@ async function main(): Promise<void> {
     hasWallet: active != null || wallets.length > 0,
   });
 
-  const { waitUntilExit } = render(
+  const renderer = await createCliRenderer({
+    exitOnCtrlC: true,
+    screenMode: 'alternate-screen',
+  });
+  const root = createRoot(renderer);
+  root.render(
     <App
       initialWalletList={wallets}
       initialActiveWallet={active}
@@ -46,11 +51,14 @@ async function main(): Promise<void> {
       initialRoute={route}
     />,
   );
-  await waitUntilExit();
+
+  await new Promise<void>((resolve) => {
+    renderer.once('destroy', () => resolve());
+  });
 
   // The UI is gone; stop everything it started. Without this, a balance refresh
   // in flight (fetches, retry backoff, rate-limiter waits) keeps the event loop
-  // alive and the app appears to hang after the user pressed q.
+  // alive and the app appears to hang after the user pressed q (decision 4.11).
   abortInFlightRequests();
 }
 

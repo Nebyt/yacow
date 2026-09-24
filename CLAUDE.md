@@ -12,6 +12,12 @@ wallet/security model, data providers, testing, UX and naming.
 - If the work **creates or changes** a decision, update `DECISIONS.md` in the same change and
   mirror it into the context log (`_context.md`).
 
+## Always load the OpenTUI skill
+
+Before implementing, reviewing, or debugging anything here — especially the TUI — read
+`~/.agents/skills/opentui/SKILL.md` and the skill docs for the task. Do not guess OpenTUI
+APIs from Ink habits. Cursor agents also have this as `.cursor/rules/opentui-skill.mdc`.
+
 ## Context log
 
 The implementation plan and resume state live in `_context.md`, canonical copy at

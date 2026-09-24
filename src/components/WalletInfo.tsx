@@ -1,10 +1,10 @@
-import React from 'react';
+import type { ReactNode } from 'react';
 import type { ActiveWallet } from '../state/store.js';
 import type { NetworkName } from '../config/networks.js';
-import { Box, Text } from 'ink';
 import { Balance } from './Balance.js';
 import { Delegation } from './Delegation.js';
 import { getProvider } from '../net/provider/registry.js';
+import { MUTED } from './theme.js';
 
 export interface WalletInfoProps {
   wallet: ActiveWallet;
@@ -13,19 +13,15 @@ export interface WalletInfoProps {
   refreshToken?: number;
 }
 
-export function WalletInfo({
-  wallet,
-  network,
-  refreshToken = 0,
-}: WalletInfoProps): React.ReactElement {
+export function WalletInfo({ wallet, network, refreshToken = 0 }: WalletInfoProps): ReactNode {
   const chain = getProvider(network);
   return (
-    <Box marginTop={1} flexDirection="column">
+    <box marginTop={1} flexDirection="column">
       <Balance wallet={wallet} network={network} refreshToken={refreshToken} provider={chain} />
       <Delegation wallet={wallet} network={network} refreshToken={refreshToken} provider={chain} />
-      <Box marginTop={1}>
-        <Text color="gray">Recent transactions land here (M3).</Text>
-      </Box>
-    </Box>
+      <box marginTop={1}>
+        <text fg={MUTED}>Recent transactions land here (M3).</text>
+      </box>
+    </box>
   );
 }

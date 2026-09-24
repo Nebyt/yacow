@@ -255,8 +255,8 @@ describe('environment overrides', () => {
   it('ignores a nonsense provider name in the env', () => {
     const home = configuredHome();
     expect(
-      resolveProviders('preprod', { homeDir: home, env: { [ENV_VARS.primary]: 'not-a-provider' } }).primary
-        ?.provider,
+      resolveProviders('preprod', { homeDir: home, env: { [ENV_VARS.primary]: 'not-a-provider' } })
+        .primary?.provider,
     ).toBe('blockfrost');
   });
 });

@@ -1,50 +1,49 @@
-import React, { useEffect, useState } from 'react';
-import { Box, Text } from 'ink';
-import QRCode from 'qrcode';
+import { useEffect, type ReactNode } from 'react';
 import { useStore } from '../state/store.js';
 import { accountPublicKeyFromHex, deriveExternalAddress } from '../crypto/derive.js';
+import { NoActiveWallet, PageHeading } from '../components/Page.js';
+import { INFO, MUTED } from '../components/theme.js';
+import { QrCode } from '../components/QrCode.js';
 
-/** Receive page: address + QR (plan §3 Op 4). Placeholder for M0. */
-export function Receive(): React.ReactElement {
+// Header, page heading, address (wraps to two lines on a narrow terminal),
+// derivation path, footer and the margins between them.
+const CHROME_ROWS = 14;
+
+/** Receive page: address + QR (plan §3 Op 4, decision 6.10). */
+export function Receive(): ReactNode {
   const { activeWallet, network, receiveAddress, setReceiveAddress } = useStore();
-  const [qrCodeAddress, setQrCodeAddress] = useState<string | null>(null);
 
   useEffect(() => {
     if (activeWallet == null) return;
 
     const accPubkey = accountPublicKeyFromHex(activeWallet.accountPubKey);
-    const receiveAddress = deriveExternalAddress(accPubkey, 0, network);
-    setReceiveAddress(receiveAddress);
-
-    void (async () => {
-      const qrCodeAddress = await QRCode.toString(receiveAddress, { type: 'terminal' });
-
-      setQrCodeAddress(qrCodeAddress);
-    })();
-  }, [activeWallet, network]);
+    const next = deriveExternalAddress(accPubkey, 0, network);
+    setReceiveAddress(next);
+  }, [activeWallet, network, setReceiveAddress]);
 
   if (activeWallet == null) {
-    return (
-      <Box flexDirection="column">
-        <Text bold>Receive</Text>
-        <Text color="gray">No active wallet. Press w to choose one.</Text>
-      </Box>
-    );
+    return <NoActiveWallet title="Receive" />;
   }
 
   return (
-    <Box flexDirection="column" width="100%">
-      <Text bold>Receive</Text>
+    <box flexDirection="column" width="100%">
+      <PageHeading title="Receive" />
 
-      <Box marginTop={1} flexDirection="column" justifyContent="center" alignItems="center">
-        <Text color="cyan">{receiveAddress}</Text>
-        <Text color="gray" italic>
-          m/1852'/1815'/0'/0/0
-        </Text>
-        <Box marginTop={1}>
-          <Text>{qrCodeAddress}</Text>
-        </Box>
-      </Box>
-    </Box>
+      {/* flexShrink stays 0 everywhere here: when the QR does not fit, flexbox
+          squeezes these rows onto one another instead of clipping. */}
+      <box marginTop={1} flexDirection="column" alignItems="center">
+        <text fg={INFO} flexShrink={0}>
+          {receiveAddress}
+        </text>
+        <text fg={MUTED} flexShrink={0}>
+          <i>m/1852'/1815'/0'/0/0</i>
+        </text>
+        {receiveAddress != null && receiveAddress !== '' && (
+          <box marginTop={1} flexShrink={0}>
+            <QrCode content={receiveAddress} reservedRows={CHROME_ROWS} />
+          </box>
+        )}
+      </box>
+    </box>
   );
 }

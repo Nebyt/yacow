@@ -1,5 +1,5 @@
-import React from 'react';
-import { Box, Text } from 'ink';
+import type { ReactNode } from 'react';
+import { BORDER, INFO, MUTED } from './theme.js';
 
 export interface Hint {
   key: string;
@@ -15,17 +15,24 @@ export interface FooterProps {
  * Each hint is its own box so a key never detaches from its label, and the row
  * wraps cleanly inside the border on narrow terminals.
  */
-export function Footer({ hints }: FooterProps): React.ReactElement {
+export function Footer({ hints }: FooterProps): ReactNode {
   return (
-    <Box marginTop={1} borderStyle="single" borderColor="gray" paddingX={1} flexWrap="wrap">
+    <box
+      border
+      borderStyle="single"
+      borderColor={BORDER}
+      paddingX={1}
+      flexDirection="row"
+      flexWrap="wrap"
+    >
       {hints.map((hint) => (
-        <Box key={`${hint.key}:${hint.label}`} marginRight={3}>
-          <Text color="cyan" bold>
-            {hint.key}
-          </Text>
-          <Text color="gray"> {hint.label}</Text>
-        </Box>
+        <box key={`${hint.key}:${hint.label}`} marginRight={3} flexDirection="row">
+          <text fg={INFO}>
+            <strong>{hint.key}</strong>
+            <span fg={MUTED}> {hint.label}</span>
+          </text>
+        </box>
       ))}
-    </Box>
+    </box>
   );
 }
