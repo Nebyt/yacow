@@ -12,8 +12,6 @@ export interface Network {
   readonly displayName: string;
   /** CSL network id: mainnet = 1, testnets = 0. */
   readonly networkId: number;
-  /** Byron protocol magic. */
-  readonly byronProtocolMagic: number;
 }
 
 export const NETWORKS: Readonly<Record<NetworkName, Network>> = Object.freeze({
@@ -21,13 +19,11 @@ export const NETWORKS: Readonly<Record<NetworkName, Network>> = Object.freeze({
     name: 'mainnet',
     displayName: 'Cardano Mainnet',
     networkId: 1,
-    byronProtocolMagic: 764824073,
   },
   preprod: {
     name: 'preprod',
     displayName: 'Cardano Preprod',
     networkId: 0,
-    byronProtocolMagic: 1,
   },
 });
 
