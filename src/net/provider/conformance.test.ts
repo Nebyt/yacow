@@ -258,7 +258,12 @@ const CASES: Record<string, Case> = {
   },
 
   'utxos of an address the chain never saw': {
-    blockfrost: () => bf.get(`/addresses/${ADDR_FRESH}/utxos?order=asc&count=100&page=1`, { error: 'Not Found' }, 404),
+    blockfrost: () =>
+      bf.get(
+        `/addresses/${ADDR_FRESH}/utxos?order=asc&count=100&page=1`,
+        { error: 'Not Found' },
+        404,
+      ),
     koios: () => ko.post('/address_utxos', []),
     run: (p) => p.getUtxosForAddresses([ADDR_FRESH]),
     expected: [],
@@ -351,9 +356,7 @@ const CASES: Record<string, Case> = {
       blockTime: 100,
       fee: '170000',
       inputs: [{ address: ADDR_A, lovelace: '3000000', assets: [] }],
-      outputs: [
-        { address: ADDR_B, lovelace: '2830000', assets: [{ unit: MILK, quantity: '1' }] },
-      ],
+      outputs: [{ address: ADDR_B, lovelace: '2830000', assets: [{ unit: MILK, quantity: '1' }] }],
     },
   },
 

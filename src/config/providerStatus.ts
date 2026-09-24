@@ -74,7 +74,11 @@ export function providerRows(options: ReadOptions = {}): ProviderRow[] {
 
   return PROVIDER_IDS.map((provider) => {
     const role: ProviderRole =
-      settings.primary === provider ? 'primary' : settings.fallback === provider ? 'fallback' : null;
+      settings.primary === provider
+        ? 'primary'
+        : settings.fallback === provider
+          ? 'fallback'
+          : null;
     const envValue = env[ENV_VARS[provider]];
     const fromEnv = envValue != null && envValue.trim() !== '';
     const perNetwork = isPerNetworkProvider(provider);
@@ -117,7 +121,8 @@ export function describeActiveProviders(network: NetworkName, options: ReadOptio
   if (primary == null || !cellFor(primary).usable) {
     return `No provider can serve ${NETWORKS[network].displayName} yet.`;
   }
-  const stand = fallback != null && cellFor(fallback).usable ? `, ${fallback.label} as fallback` : '';
+  const stand =
+    fallback != null && cellFor(fallback).usable ? `, ${fallback.label} as fallback` : '';
   return `${NETWORKS[network].displayName} served by ${primary.label}${stand}.`;
 }
 

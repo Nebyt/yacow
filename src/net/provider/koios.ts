@@ -191,8 +191,7 @@ export function createKoiosProvider(config: KoiosConfig): ChainProvider {
     ...httpConfig,
     provider: 'koios',
     baseUrl: baseUrl ?? KOIOS_BASE_URLS[network],
-    headers:
-      token != null && token !== '' ? { authorization: `Bearer ${token}` } : {},
+    headers: token != null && token !== '' ? { authorization: `Bearer ${token}` } : {},
   });
 
   /** POST a batched query, chunked and offset-paged, flattened back into one list. */

@@ -49,7 +49,11 @@ function get(path: string, body: unknown, status = 200): void {
 function post(
   path: string,
   body: unknown,
-  options: { status?: number; query?: string; capture?: (json: Record<string, unknown>) => void } = {},
+  options: {
+    status?: number;
+    query?: string;
+    capture?: (json: Record<string, unknown>) => void;
+  } = {},
 ): void {
   agent
     .get(ORIGIN)
@@ -133,7 +137,10 @@ describe('auth', () => {
 
 describe('addresses', () => {
   it('treats an omitted address as never used and keeps input order', async () => {
-    post('/address_info', [{ address: 'addr_b', balance: '1' }, { address: 'addr_a', balance: '2' }]);
+    post('/address_info', [
+      { address: 'addr_b', balance: '1' },
+      { address: 'addr_a', balance: '2' },
+    ]);
     await expect(
       provider().filterUsedAddresses(['addr_a', 'addr_unused', 'addr_b']),
     ).resolves.toEqual(['addr_a', 'addr_b']);
@@ -147,8 +154,12 @@ describe('addresses', () => {
   it('keeps every request body under the 5120-byte limit Koios enforces', async () => {
     // Real bech32 length: 50 of these is 5583 bytes, which Koios answers with
     // HTTP 413 -- the bug this test exists for.
-    const real = 'addr_test1qqh6cswdjfaxz7f2ldpl9c0xzxv5ss403vnhz2dznuyltxcuv6hm9vhl7207qs0e4pcw5ctajfk37mz43kjegxqel0wsfkxdy7';
-    const addresses = Array.from({ length: 100 }, (_, i) => `${real.slice(0, -2)}${i.toString().padStart(2, '0')}`);
+    const real =
+      'addr_test1qqh6cswdjfaxz7f2ldpl9c0xzxv5ss403vnhz2dznuyltxcuv6hm9vhl7207qs0e4pcw5ctajfk37mz43kjegxqel0wsfkxdy7';
+    const addresses = Array.from(
+      { length: 100 },
+      (_, i) => `${real.slice(0, -2)}${i.toString().padStart(2, '0')}`,
+    );
     const bodies: string[] = [];
     const capture = (json: Record<string, unknown>) => {
       bodies.push(JSON.stringify(json));
@@ -211,7 +222,10 @@ describe('addresses', () => {
       datum_hash: null,
       asset_list: null,
     });
-    post('/address_utxos', Array.from({ length: PAGE_SIZE }, (_, i) => row(i)));
+    post(
+      '/address_utxos',
+      Array.from({ length: PAGE_SIZE }, (_, i) => row(i)),
+    );
     post('/address_utxos', [row(PAGE_SIZE)], { query: `?offset=${PAGE_SIZE}&limit=${PAGE_SIZE}` });
 
     const utxos = await provider().getUtxosForAddresses(['addr_a']);
@@ -282,7 +296,11 @@ describe('transactions', () => {
       { hash: 'tx_new', blockHeight: 200, blockTime: 2000, fee: '170000' },
       { hash: 'tx_shared', blockHeight: 100, blockTime: 1000, fee: '180000' },
     ]);
-    expect(sent).toMatchObject({ _tx_hashes: ['tx_new', 'tx_shared'], _inputs: true, _outputs: true });
+    expect(sent).toMatchObject({
+      _tx_hashes: ['tx_new', 'tx_shared'],
+      _inputs: true,
+      _outputs: true,
+    });
   });
 
   it('breaks same-block ties by hash so the list is stable', async () => {
@@ -316,9 +334,7 @@ describe('transactions', () => {
         block_height: 10,
         tx_timestamp: 100,
         fee: '170000',
-        inputs: [
-          { payment_addr: { bech32: 'addr_in' }, value: '3000000', asset_list: [] },
-        ],
+        inputs: [{ payment_addr: { bech32: 'addr_in' }, value: '3000000', asset_list: [] }],
         outputs: [
           {
             payment_addr: { bech32: 'addr_out' },
@@ -397,7 +413,12 @@ describe('assets', () => {
 
   it('falls back to the ascii name and zero decimals without registry metadata', async () => {
     post('/asset_info', [
-      { policy_id: POLICY, asset_name: NAME_HEX, asset_name_ascii: 'MILK', token_registry_metadata: null },
+      {
+        policy_id: POLICY,
+        asset_name: NAME_HEX,
+        asset_name_ascii: 'MILK',
+        token_registry_metadata: null,
+      },
     ]);
     await expect(provider().getAssetInfo([UNIT])).resolves.toEqual([
       {

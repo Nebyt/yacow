@@ -1,7 +1,14 @@
 import { mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { ENV_VARS, getKey, readProviders, setFallback, setPrimary, setProviderKey } from './providers.js';
+import {
+  ENV_VARS,
+  getKey,
+  readProviders,
+  setFallback,
+  setPrimary,
+  setProviderKey,
+} from './providers.js';
 import {
   clearFallback,
   describeActiveProviders,

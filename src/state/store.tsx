@@ -88,7 +88,7 @@ export function AppProvider({
   const showError = useCallback(() => {
     setErrorHappened(true);
     setTimeout(() => {
-      setErrorHappened(false)
+      setErrorHappened(false);
       setErrorMessage(null);
     }, 3000);
   }, []);
@@ -100,9 +100,9 @@ export function AppProvider({
       setInfoMessage(null);
     }, 3000);
   }, []);
-  
+
   const refresh = useCallback(() => setRefreshToken((n) => n + 1), []);
-  
+
   const copyReceiverAddress = useCallback(async () => {
     if (receiveAddress == null) {
       return;

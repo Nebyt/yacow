@@ -2,11 +2,7 @@ import { mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { setFallback, setPrimary, setProviderKey } from '../../config/providers.js';
-import {
-  ProviderNotConfiguredError,
-  getProvider,
-  invalidateProviderCache,
-} from './registry.js';
+import { ProviderNotConfiguredError, getProvider, invalidateProviderCache } from './registry.js';
 import { BLOCKFROST_BASE_URLS } from './blockfrost.js';
 import type { FallbackProvider } from './fallback.js';
 

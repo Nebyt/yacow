@@ -1,12 +1,7 @@
 import { RustModule } from '../crypto/rust.js';
 import { accountPublicKeyHex } from '../crypto/derive.js';
 import { mnemonicToRootKey } from '../crypto/mnemonic.js';
-import {
-  describeTokens,
-  fetchWalletBalance,
-  formatAda,
-  formatQuantity,
-} from './balance.js';
+import { describeTokens, fetchWalletBalance, formatAda, formatQuantity } from './balance.js';
 import type { AssetInfo, Balance, ChainProvider } from '../net/provider/types.js';
 
 const MNEMONIC = `${'abandon '.repeat(14)}address`.trim();
@@ -71,7 +66,14 @@ describe('describeTokens', () => {
 
   it('falls back to the registry name when there is no ticker', () => {
     const metadata: AssetInfo[] = [
-      { unit: MILK, policyId: POLICY, assetNameHex: '4d494c4b', name: 'Milk Token', ticker: null, decimals: 0 },
+      {
+        unit: MILK,
+        policyId: POLICY,
+        assetNameHex: '4d494c4b',
+        name: 'Milk Token',
+        ticker: null,
+        decimals: 0,
+      },
     ];
     expect(describeTokens(balance, metadata)[0].label).toBe('Milk Token');
   });
@@ -154,22 +156,25 @@ describe('fetchWalletBalance', () => {
   it('labels the tokens it does hold', async () => {
     const usedAddress = (await derivedAddresses())[0];
     const result = await fetchWalletBalance(
-      provider({
-        getBalanceForAddresses: async () => ({
-          lovelace: '2000000',
-          assets: [{ unit: MILK, quantity: '5000000' }],
-        }),
-        getAssetInfo: async () => [
-          {
-            unit: MILK,
-            policyId: POLICY,
-            assetNameHex: '4d494c4b',
-            name: 'Milk Token',
-            ticker: 'MILK',
-            decimals: 6,
-          },
-        ],
-      }, new Set([usedAddress])),
+      provider(
+        {
+          getBalanceForAddresses: async () => ({
+            lovelace: '2000000',
+            assets: [{ unit: MILK, quantity: '5000000' }],
+          }),
+          getAssetInfo: async () => [
+            {
+              unit: MILK,
+              policyId: POLICY,
+              assetNameHex: '4d494c4b',
+              name: 'Milk Token',
+              ticker: 'MILK',
+              decimals: 6,
+            },
+          ],
+        },
+        new Set([usedAddress]),
+      ),
       accountPubKey,
       0,
       { gapLimit: 3 },
@@ -191,8 +196,7 @@ describe('request economy', () => {
     const provider = {
       id: 'blockfrost',
       network: 'preprod',
-      filterUsedAddresses: async (addresses: string[]) =>
-        addresses.filter((a) => used.includes(a)),
+      filterUsedAddresses: async (addresses: string[]) => addresses.filter((a) => used.includes(a)),
       getBalanceForAddresses: async (addresses: string[]) => {
         calls.balance.push(addresses);
         return { lovelace: '1000000', assets: [] };

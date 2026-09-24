@@ -28,4 +28,4 @@ export function WalletInfo({
       </Box>
     </Box>
   );
-};
+}

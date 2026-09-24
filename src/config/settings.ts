@@ -18,7 +18,9 @@ export function readSettings(homeDir?: string): Settings {
   if (!existsSync(path)) return { network: DEFAULT_NETWORK };
   try {
     const raw = JSON.parse(readFileSync(path, 'utf8')) as Partial<Settings>;
-    return { network: isNetworkName(raw.network ?? '') ? (raw.network as NetworkName) : DEFAULT_NETWORK };
+    return {
+      network: isNetworkName(raw.network ?? '') ? (raw.network as NetworkName) : DEFAULT_NETWORK,
+    };
   } catch {
     return { network: DEFAULT_NETWORK };
   }

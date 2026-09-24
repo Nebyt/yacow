@@ -63,7 +63,9 @@ describe('failover', () => {
 
   it('flags the primary as needing attention only for a rejected credential', async () => {
     const authPrimary = stub('blockfrost');
-    authPrimary.getTip.mockRejectedValueOnce(new ProviderAuthError('403', { provider: 'blockfrost' }));
+    authPrimary.getTip.mockRejectedValueOnce(
+      new ProviderAuthError('403', { provider: 'blockfrost' }),
+    );
     const authProvider = createFallbackProvider(authPrimary, stub('koios'));
     await authProvider.getTip();
     expect(authProvider.primaryNeedsAttention).toBe(true);
@@ -92,8 +94,12 @@ describe('failover', () => {
   it('reports what both backends said when neither can answer', async () => {
     const primary = stub('blockfrost');
     const secondary = stub('koios');
-    primary.getTip.mockRejectedValue(new ProviderRateLimitError('quota spent', { provider: 'blockfrost' }));
-    secondary.getTip.mockRejectedValue(new ProviderUnavailableError('timeout', { provider: 'koios' }));
+    primary.getTip.mockRejectedValue(
+      new ProviderRateLimitError('quota spent', { provider: 'blockfrost' }),
+    );
+    secondary.getTip.mockRejectedValue(
+      new ProviderUnavailableError('timeout', { provider: 'koios' }),
+    );
 
     const provider = createFallbackProvider(primary, secondary);
     const err = await provider.getTip().catch((e: unknown) => e as AllProvidersFailedError);
@@ -105,7 +111,9 @@ describe('failover', () => {
 
   it('propagates the error unchanged when no secondary is configured', async () => {
     const primary = stub('blockfrost');
-    primary.getTip.mockRejectedValueOnce(new ProviderUnavailableError('down', { provider: 'blockfrost' }));
+    primary.getTip.mockRejectedValueOnce(
+      new ProviderUnavailableError('down', { provider: 'blockfrost' }),
+    );
     const provider = createFallbackProvider(primary, null);
     await expect(provider.getTip()).rejects.toBeInstanceOf(ProviderUnavailableError);
   });
@@ -123,7 +131,9 @@ describe('cooldown', () => {
     const time = clock();
     const primary = stub('blockfrost');
     const secondary = stub('koios');
-    primary.getTip.mockRejectedValueOnce(new ProviderUnavailableError('down', { provider: 'blockfrost' }));
+    primary.getTip.mockRejectedValueOnce(
+      new ProviderUnavailableError('down', { provider: 'blockfrost' }),
+    );
 
     const provider = createFallbackProvider(primary, secondary, { now: time.now });
     await provider.getTip(); // fails over, primary enters cooldown
@@ -138,7 +148,9 @@ describe('cooldown', () => {
   it('tries the primary again once the cooldown has passed', async () => {
     const time = clock();
     const primary = stub('blockfrost');
-    primary.getTip.mockRejectedValueOnce(new ProviderUnavailableError('down', { provider: 'blockfrost' }));
+    primary.getTip.mockRejectedValueOnce(
+      new ProviderUnavailableError('down', { provider: 'blockfrost' }),
+    );
 
     const provider = createFallbackProvider(primary, stub('koios'), { now: time.now });
     await provider.getTip();
@@ -203,7 +215,9 @@ describe('submitTx', () => {
     const time = clock();
     const primary = stub('blockfrost');
     const secondary = stub('koios');
-    primary.getTip.mockRejectedValueOnce(new ProviderUnavailableError('down', { provider: 'blockfrost' }));
+    primary.getTip.mockRejectedValueOnce(
+      new ProviderUnavailableError('down', { provider: 'blockfrost' }),
+    );
 
     const provider = createFallbackProvider(primary, secondary, { now: time.now });
     await provider.getTip(); // primary enters cooldown before any submit happens

@@ -60,7 +60,7 @@ describe('createSoftwareWallet', () => {
     expect(() =>
       createSoftwareWallet({
         name: 'my wallet',
-          mnemonic: FIXED,
+        mnemonic: FIXED,
         password: PASSWORD,
         homeDir: home,
       }),

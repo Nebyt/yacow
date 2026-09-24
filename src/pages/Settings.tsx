@@ -33,7 +33,10 @@ type Action =
 
 type Step = 'menu' | 'key' | 'busy';
 
-function actionsFor(rows: ProviderRow[], network: NetworkName): { label: string; action: Action }[] {
+function actionsFor(
+  rows: ProviderRow[],
+  network: NetworkName,
+): { label: string; action: Action }[] {
   const items: { label: string; action: Action }[] = [];
 
   // A Koios token covers every network, so its entry says so instead of naming
@@ -76,17 +79,29 @@ function actionsFor(rows: ProviderRow[], network: NetworkName): { label: string;
       label: `Swap roles (${fallback.label} becomes primary)`,
       action: { kind: 'swap' },
     });
-    items.push({ label: `Stop using ${fallback.label} as fallback`, action: { kind: 'clear-fallback' } });
+    items.push({
+      label: `Stop using ${fallback.label} as fallback`,
+      action: { kind: 'clear-fallback' },
+    });
   }
 
-  items.push({ label: `Test connection on ${NETWORKS[network].displayName}`, action: { kind: 'test' } });
+  items.push({
+    label: `Test connection on ${NETWORKS[network].displayName}`,
+    action: { kind: 'test' },
+  });
   items.push({ label: 'Switch network', action: { kind: 'network' } });
   items.push({ label: 'Back', action: { kind: 'back' } });
   return items;
 }
 
 /** The provider x network key grid (plan §12.6). Keys are shown masked, always. */
-function Grid({ rows, network }: { rows: ProviderRow[]; network: NetworkName }): React.ReactElement {
+function Grid({
+  rows,
+  network,
+}: {
+  rows: ProviderRow[];
+  network: NetworkName;
+}): React.ReactElement {
   return (
     <Box flexDirection="column">
       {rows.map((row) => (
@@ -201,7 +216,11 @@ export function Settings({ rows, summary }: SettingsProps): React.ReactElement {
     if (target == null) return;
     const trimmed = value.trim();
     setStep('busy');
-    const result = await testProviderKey(target.provider, target.network, trimmed === '' ? null : trimmed);
+    const result = await testProviderKey(
+      target.provider,
+      target.network,
+      trimmed === '' ? null : trimmed,
+    );
     if (!result.ok) {
       setMessage(result.message);
       setStep('key');
@@ -240,7 +259,10 @@ export function Settings({ rows, summary }: SettingsProps): React.ReactElement {
         <Box flexDirection="column" marginTop={1}>
           <Text>
             {PROVIDER_LABELS[target.provider]}
-            {target.provider === 'koios' ? ' token (all networks)' : ` key for ${target.scopeLabel}`}:
+            {target.provider === 'koios'
+              ? ' token (all networks)'
+              : ` key for ${target.scopeLabel}`}
+            :
           </Text>
           <Box>
             <Text>Key: </Text>

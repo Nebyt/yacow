@@ -104,11 +104,7 @@ export function decryptRootKey(keystore: Keystore, password: string): Buffer {
   const salt = Buffer.from(keystore.kdf.salt, 'hex');
   const key = deriveKey(password, salt, keystore.kdf);
   try {
-    const decipher = createDecipheriv(
-      'aes-256-gcm',
-      key,
-      Buffer.from(keystore.cipher.iv, 'hex'),
-    );
+    const decipher = createDecipheriv('aes-256-gcm', key, Buffer.from(keystore.cipher.iv, 'hex'));
     decipher.setAuthTag(Buffer.from(keystore.cipher.tag, 'hex'));
     return Buffer.concat([
       decipher.update(Buffer.from(keystore.cipher.data, 'hex')),

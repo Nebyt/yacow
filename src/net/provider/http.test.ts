@@ -96,7 +96,13 @@ describe('buildUrl', () => {
 
 describe('redaction', () => {
   it('masks credential headers and leaves the rest alone', () => {
-    expect(redactHeaders({ project_id: KEY, Authorization: `Bearer ${KEY}`, accept: 'application/json' })).toEqual({
+    expect(
+      redactHeaders({
+        project_id: KEY,
+        Authorization: `Bearer ${KEY}`,
+        accept: 'application/json',
+      }),
+    ).toEqual({
       project_id: REDACTED,
       Authorization: REDACTED,
       accept: 'application/json',
@@ -179,7 +185,11 @@ describe('status mapping', () => {
   });
 
   it('maps quota (402) and rate limit (429) to ProviderRateLimitError', async () => {
-    const { client } = clientWith([status(402, 'quota'), status(402, 'quota'), status(402, 'quota')]);
+    const { client } = clientWith([
+      status(402, 'quota'),
+      status(402, 'quota'),
+      status(402, 'quota'),
+    ]);
     await expect(client.getJson('/blocks/latest')).rejects.toBeInstanceOf(ProviderRateLimitError);
   });
 
@@ -197,7 +207,9 @@ describe('status mapping', () => {
   });
 
   it('rejects a 200 body that is not JSON', async () => {
-    const { client, calls } = clientWith([() => new Response('<html>oops</html>', { status: 200 })]);
+    const { client, calls } = clientWith([
+      () => new Response('<html>oops</html>', { status: 200 }),
+    ]);
     await expect(client.getJson('/blocks/latest')).rejects.toBeInstanceOf(ProviderRequestError);
     expect(calls).toHaveLength(1);
   });
@@ -230,13 +242,19 @@ describe('retries', () => {
   });
 
   it('waits the server-requested delay when it exceeds our backoff', async () => {
-    const { client, sleeps } = clientWith([status(429, '', { 'retry-after': '2' }), json({ ok: true })]);
+    const { client, sleeps } = clientWith([
+      status(429, '', { 'retry-after': '2' }),
+      json({ ok: true }),
+    ]);
     await client.getJson('/blocks/latest');
     expect(sleeps).toEqual([2000]);
   });
 
   it('caps a very long Retry-After', async () => {
-    const { client, sleeps } = clientWith([status(429, '', { 'retry-after': '3600' }), json({ ok: true })]);
+    const { client, sleeps } = clientWith([
+      status(429, '', { 'retry-after': '3600' }),
+      json({ ok: true }),
+    ]);
     await client.getJson('/blocks/latest');
     expect(sleeps).toEqual([MAX_BACKOFF_MS]);
   });
@@ -298,9 +316,9 @@ describe('credential safety', () => {
 describe('text bodies', () => {
   it('returns the raw body when the caller asks for text', async () => {
     const { client } = clientWith([() => new Response('"txhash123"', { status: 200 })]);
-    await expect(client.postCbor('/tx/submit', new Uint8Array([1]), { parse: 'text' })).resolves.toBe(
-      '"txhash123"',
-    );
+    await expect(
+      client.postCbor('/tx/submit', new Uint8Array([1]), { parse: 'text' }),
+    ).resolves.toBe('"txhash123"');
   });
 
   it('unquotes a quoted body but leaves a bare one alone', () => {

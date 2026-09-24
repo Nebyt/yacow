@@ -13,13 +13,17 @@ describe('mapWithConcurrency', () => {
   it('never exceeds the limit of in-flight calls', async () => {
     let inFlight = 0;
     let peak = 0;
-    await mapWithConcurrency(Array.from({ length: 12 }, (_, i) => i), 3, async (n) => {
-      inFlight += 1;
-      peak = Math.max(peak, inFlight);
-      await new Promise((resolve) => setTimeout(resolve, 1));
-      inFlight -= 1;
-      return n;
-    });
+    await mapWithConcurrency(
+      Array.from({ length: 12 }, (_, i) => i),
+      3,
+      async (n) => {
+        inFlight += 1;
+        peak = Math.max(peak, inFlight);
+        await new Promise((resolve) => setTimeout(resolve, 1));
+        inFlight -= 1;
+        return n;
+      },
+    );
     expect(peak).toBe(3);
   });
 
@@ -64,7 +68,8 @@ describe('chunk', () => {
 describe('chunkByBytes', () => {
   // A real preprod address: 108 characters, so 50 of them exceed Koios's
   // 5120-byte body limit -- the regression this guards.
-  const ADDRESS = 'addr_test1qqh6cswdjfaxz7f2ldpl9c0xzxv5ss403vnhz2dznuyltxcuv6hm9vhl7207qs0e4pcw5ctajfk37mz43kjegxqel0wsfkxdy7';
+  const ADDRESS =
+    'addr_test1qqh6cswdjfaxz7f2ldpl9c0xzxv5ss403vnhz2dznuyltxcuv6hm9vhl7207qs0e4pcw5ctajfk37mz43kjegxqel0wsfkxdy7';
 
   it('keeps each chunk under the byte budget', () => {
     const addresses = Array.from({ length: 100 }, () => ADDRESS);

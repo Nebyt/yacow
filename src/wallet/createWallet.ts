@@ -34,7 +34,10 @@ export function keystorePath(name: string, homeDir?: string): string {
 export const MAX_NAME_LEN = 20;
 
 export function sanitizeName(name: string): string {
-  const clean = name.trim().replace(/[^a-zA-Z0-9 _-]/g, '').replace(/\s+/g, '-');
+  const clean = name
+    .trim()
+    .replace(/[^a-zA-Z0-9 _-]/g, '')
+    .replace(/\s+/g, '-');
   if (clean.length === 0) throw new Error('Wallet name must contain letters or digits.');
   if (clean.length > MAX_NAME_LEN) {
     throw new Error(`Wallet name must be ${MAX_NAME_LEN} characters or fewer.`);

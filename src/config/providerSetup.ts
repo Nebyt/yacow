@@ -129,7 +129,8 @@ export async function testProviderKey(
         : `${PROVIDER_LABELS[provider]} did not answer. Check your connection and try again.`,
     };
   } catch (err) {
-    if (err instanceof ProviderNetworkMismatchError) return { ok: false, tip: null, message: err.message };
+    if (err instanceof ProviderNetworkMismatchError)
+      return { ok: false, tip: null, message: err.message };
     if (err instanceof ProviderAuthError) {
       return {
         ok: false,

@@ -7,7 +7,12 @@
 //
 // Addresses are derived locally from the account PUBLIC key: read-only work
 // never needs the password (decision 3.3).
-import { ROLE_EXTERNAL, ROLE_INTERNAL, accountPublicKeyFromHex, baseAddressFromAccountPublic } from '../crypto/derive.js';
+import {
+  ROLE_EXTERNAL,
+  ROLE_INTERNAL,
+  accountPublicKeyFromHex,
+  baseAddressFromAccountPublic,
+} from '../crypto/derive.js';
 import type { ChainProvider } from './provider/types.js';
 
 export const GAP_LIMIT = 20;
