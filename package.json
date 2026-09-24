@@ -5,17 +5,18 @@
   "description": "YACOW -- Yet Another Cardano Only Wallet: a lightweight interactive terminal wallet for Cardano",
   "type": "module",
   "bin": {
-    "yacow": "./dist/cli.js"
+    "yacow": "./src/cli.tsx"
   },
   "engines": {
+    "bun": ">=1.3.0",
     "node": ">=18"
   },
   "scripts": {
     "build": "tsc",
     "typecheck": "tsc --noEmit",
-    "start": "node dist/cli.js",
-    "dev": "bun run build && node dist/cli.js",
-    "smoke": "bun run build && node scripts/smoke.mjs",
+    "start": "bun src/cli.tsx",
+    "dev": "bun src/cli.tsx",
+    "smoke": "bun scripts/smoke.tsx",
     "test": "NODE_ENV=jest bunx jest",
     "test:ui": "bun run smoke",
     "test:all": "bun run test && bun run smoke",
@@ -26,14 +27,11 @@
   "dependencies": {
     "@emurgo/cardano-serialization-lib-nodejs": "14.1.2",
     "@emurgo/cip4-js": "1.0.5",
+    "@opentui/core": "^0.5.12",
+    "@opentui/react": "^0.5.12",
     "bip39": "3.1.0",
-    "clipboardy": "^5.3.2",
-    "ink": "5.1.0",
-    "ink-select-input": "6.0.0",
-    "ink-spinner": "5.0.0",
-    "ink-text-input": "6.0.0",
-    "qrcode": "1.5.4",
-    "react": "^18.3.1",
+    "qrcode": "^1.5.4",
+    "react": "^19.2.0",
     "zxcvbn": "^4.4.2"
   },
   "devDependencies": {
@@ -44,11 +42,10 @@
     "@types/jest": "^29.5.12",
     "@types/node": "^20.14.15",
     "@types/qrcode": "^1.5.6",
-    "@types/react": "^18.3.4",
+    "@types/react": "^19.2.0",
     "@types/zxcvbn": "^4.4.5",
     "babel-jest": "^29.7.0",
     "babel-plugin-transform-import-meta": "^2.3.3",
-    "ink-testing-library": "^4.0.0",
     "jest": "^29.7.0",
     "prettier": "^3.9.9",
     "typescript": "^5.4.5",

@@ -1,5 +1,5 @@
-import React from 'react';
-import { Box, Text, useApp, useInput } from 'ink';
+import { useRenderer, useKeyboard } from '@opentui/react';
+import type { ReactNode } from 'react';
 import { AppProvider, useStore, type AppProviderProps } from './state/store.js';
 import { NETWORKS, type NetworkName } from './config/networks.js';
 import { Footer, type Hint } from './components/Footer.js';
@@ -16,6 +16,7 @@ import { Settings } from './pages/Settings.js';
 import { ChainProvider, PROVIDER_LABELS } from './net/provider/types.js';
 import { FallbackProvider } from './net/provider/fallback.js';
 import { getProvider } from './net/provider/registry.js';
+import { ACCENT, BORDER, ERROR, SUCCESS, WARNING } from './components/theme.js';
 
 function servedByLabel(provider: ChainProvider): string | null {
   const fallback = provider as Partial<FallbackProvider>;
@@ -28,48 +29,49 @@ function servedByLabel(provider: ChainProvider): string | null {
   return fallback.primaryCoolingDown === true ? `${via} — primary unavailable` : via;
 }
 
-function Header({ network }: { network: NetworkName }): React.ReactElement {
+function Header({ network }: { network: NetworkName }): ReactNode {
   const provider = getProvider(network);
   const servedBy = servedByLabel(provider);
 
   return (
-    <Box justifyContent="space-between" borderStyle="single" borderColor="blue" paddingX={1}>
-      <Text bold underline color="blue">
-        YACOW
-      </Text>
-      <Text color="yellow">
+    <box
+      flexDirection="row"
+      justifyContent="space-between"
+      border
+      borderStyle="single"
+      borderColor={ACCENT}
+      paddingX={1}
+    >
+      <text fg={ACCENT}>
+        <strong>
+          <u>YACOW</u>
+        </strong>
+      </text>
+      <text fg={WARNING}>
         {NETWORKS[network].displayName}
-        <Text color="greenBright">{servedBy != null ? ` — ${servedBy}` : 'no provider'}</Text>
-      </Text>
-    </Box>
+        <span fg={SUCCESS}>{servedBy != null ? ` — ${servedBy}` : 'no provider'}</span>
+      </text>
+    </box>
   );
 }
 
-function ErrorBox({ message }: { message: string }): React.ReactElement {
+function ErrorBox({ message }: { message: string }): ReactNode {
   return (
-    <Box flexDirection="column" justifyContent="center" alignItems="center">
-      <Text bold color="red">
-        {message}
-      </Text>
-    </Box>
+    <box justifyContent="center" alignItems="center">
+      <text fg={ERROR}>
+        <strong>{message}</strong>
+      </text>
+    </box>
   );
 }
 
-function InfoBox({ message }: { message: string }): React.ReactElement {
+function InfoBox({ message }: { message: string }): ReactNode {
   return (
-    <Box flexDirection="column" justifyContent="center" alignItems="center">
-      <Text bold color="green">
-        {message}
-      </Text>
-    </Box>
-  );
-}
-
-function StubBox(): React.ReactElement {
-  return (
-    <Box flexDirection="column" justifyContent="center" alignItems="center">
-      <Text color="green"> </Text>
-    </Box>
+    <box justifyContent="center" alignItems="center">
+      <text fg={SUCCESS}>
+        <strong>{message}</strong>
+      </text>
+    </box>
   );
 }
 
@@ -130,8 +132,8 @@ function hintsFor(route: string, hasWallet: boolean): Hint[] {
   return hints.filter((h) => h.to !== route).map(({ key, label }) => ({ key, label }));
 }
 
-function Shell(): React.ReactElement {
-  const { exit } = useApp();
+function Shell(): ReactNode {
+  const renderer = useRenderer();
   const {
     route,
     setRoute,
@@ -148,40 +150,82 @@ function Shell(): React.ReactElement {
 
   const back = () => setRoute(hasWallet ? 'main' : 'onboarding');
 
-  // Global shortcuts. Suspended (except Ctrl-C) while a text field is capturing.
-  useInput(
-    (input, key) => {
-      if (key.ctrl && input === 'c') {
-        exit();
+  // Global shortcuts. Direct listeners run before the focused field (OpenTUI).
+  // Suspended (except Esc / q) while a text field is capturing.
+  useKeyboard((key) => {
+    if (key.repeated) return;
+    // Esc stays active even while a text field is capturing, so the user can
+    // always leave a flow (fixes being trapped in Create/Restore steps).
+    if (key.name === 'escape') {
+      if (route === 'providerSetup') return;
+      key.stopPropagation();
+      back();
+      return;
+    }
+    if (capturing) return;
+    if (key.name === 'q') {
+      key.stopPropagation();
+      renderer.destroy();
+      return;
+    }
+    if (route === 'providerSetup') return; // no navigation out of the gate
+    if (key.name === 'n') {
+      key.stopPropagation();
+      setRoute('network');
+      return;
+    }
+    if (key.name === ',') {
+      key.stopPropagation();
+      setRoute('settings');
+      return;
+    }
+    if (key.name === 'w') {
+      key.stopPropagation();
+      setRoute('wallets');
+      return;
+    }
+    if (!hasWallet && route === 'onboarding') {
+      if (key.name === 'c') {
+        key.stopPropagation();
+        setRoute('create');
         return;
       }
-      // Esc stays active even while a text field is capturing, so the user can
-      // always leave a flow (fixes being trapped in Create/Restore steps).
-      // Esc leaves any flow -- except the provider gate, which has nowhere to
-      // go until a provider answers.
-      if (key.escape) return route === 'providerSetup' ? undefined : back();
-      if (capturing) return; // otherwise suspend letter shortcuts while typing
-      if (input === 'q') return exit();
-      if (route === 'providerSetup') return; // no navigation out of the gate
-      if (input === 'n') return setRoute('network');
-      if (input === ',') return setRoute('settings');
-      if (input === 'w') return setRoute('wallets');
-      if (!hasWallet && route === 'onboarding') {
-        if (input === 'c') return setRoute('create');
-        if (input === 'r') return setRoute('restore');
+      if (key.name === 'r') {
+        key.stopPropagation();
+        setRoute('restore');
+        return;
       }
-      if (hasWallet) {
-        if (input === 'R' && route === 'main') return refresh(); // re-fetch chain data on the current page
-        if (key.return && route === 'receive') return copyReceiverAddress(); // copy receive address to clipboard
-        if (input === 'm') return setRoute('main');
-        if (input === 's') return setRoute('send');
-        if (input === 'r') return setRoute('receive');
+    }
+    if (hasWallet) {
+      if (key.shift && key.name === 'r' && route === 'main') {
+        key.stopPropagation();
+        refresh();
+        return;
       }
-    },
-    { isActive: true },
-  );
+      if (key.name === 'return' && route === 'receive') {
+        key.stopPropagation();
+        void copyReceiverAddress();
+        return;
+      }
+      if (key.name === 'm') {
+        key.stopPropagation();
+        setRoute('main');
+        return;
+      }
+      if (key.name === 's') {
+        key.stopPropagation();
+        setRoute('send');
+        return;
+      }
+      if (key.name === 'r' && !key.shift) {
+        key.stopPropagation();
+        setRoute('receive');
+        return;
+      }
+    }
+  });
 
-  let body: React.ReactElement;
+  let body: ReactNode;
   switch (route) {
     case 'providerSetup':
       body = <ProviderSetup />;
@@ -217,22 +261,34 @@ function Shell(): React.ReactElement {
   }
 
   return (
-    <Box flexDirection="column" borderStyle="double" borderColor="gray">
+    <box
+      flexDirection="column"
+      width="100%"
+      height="100%"
+      border
+      borderStyle="double"
+      borderColor={BORDER}
+    >
       <Header network={network} />
       {errorHappened && <ErrorBox message={errorMessage || 'An error occurred.'} />}
       {showInfoMessage && <InfoBox message={infoMessage || 'Info message.'} />}
-      {!errorHappened && !showInfoMessage && <StubBox />}
-      <Box marginTop={1} width="100%">
+      <box
+        flexGrow={1}
+        width="100%"
+        paddingLeft={1}
+        paddingRight={1}
+        paddingTop={!errorHappened && !showInfoMessage ? 1 : 0}
+      >
         {body}
-      </Box>
+      </box>
       <Footer hints={hintsFor(route, hasWallet)} />
-    </Box>
+    </box>
   );
 }
 
 export type AppProps = Omit<AppProviderProps, 'children'>;
 
-export function App(props: AppProps): React.ReactElement {
+export function App(props: AppProps): ReactNode {
   return (
     <AppProvider {...props}>
       <Shell />

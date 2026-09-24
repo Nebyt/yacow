@@ -1,11 +1,12 @@
-import React, { useEffect, useState } from 'react';
-import { Box, Text } from 'ink';
-import Spinner from 'ink-spinner';
+import { useEffect, useState, type ReactNode } from 'react';
 import { getNetwork, type NetworkName } from '../config/networks.js';
 import { getProvider } from '../net/provider/registry.js';
 import type { ChainProvider } from '../net/provider/types.js';
 import { fetchWalletBalance, type WalletBalance } from '../wallet/balance.js';
 import type { ActiveWallet } from '../state/store.js';
+import { Working } from './Working.js';
+import { ChainError } from './Page.js';
+import { FG, MUTED, SUCCESS } from './theme.js';
 
 export interface BalanceProps {
   wallet: ActiveWallet;
@@ -21,7 +22,7 @@ export function Balance({
   refreshToken = 0,
   provider,
   balance: injected,
-}: BalanceProps): React.ReactElement {
+}: BalanceProps): ReactNode {
   const [balance, setBalance] = useState<WalletBalance | null>(injected ?? null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(injected == null);
@@ -61,48 +62,34 @@ export function Balance({
   }, [wallet.accountPubKey, network, refreshToken, provider, injected]);
 
   if (loading) {
-    return (
-      <Box>
-        <Text color="cyan">
-          <Spinner type="dots" />
-        </Text>
-        <Text> Loading balance…</Text>
-      </Box>
-    );
+    return <Working label="Loading balance…" />;
   }
 
   if (error != null) {
-    return (
-      <Box flexDirection="column">
-        <Text color="red">Balance unavailable: {error}</Text>
-        <Text color="gray">Press R to retry, or , to check your providers.</Text>
-      </Box>
-    );
+    return <ChainError subject="Balance" error={error} />;
   }
 
   return (
-    <Box flexDirection="column">
-      <Box>
-        <Text bold color="green">
-          {balance?.ada ?? '0'} ADA
-        </Text>
-      </Box>
+    <box flexDirection="column">
+      <text fg={SUCCESS}>
+        <strong>{balance?.ada ?? '0'} ADA</strong>
+      </text>
       {balance != null && balance.tokens.length > 0 && (
-        <Box flexDirection="column" marginTop={1}>
-          <Text color="gray">Tokens:</Text>
+        <box flexDirection="column" marginTop={1}>
+          <text fg={MUTED}>Tokens:</text>
           {balance.tokens.slice(0, 5).map((token) => (
-            <Text key={token.unit}>
+            <text key={token.unit} fg={FG}>
               {'  '}
               {token.display} {token.label}
-            </Text>
+            </text>
           ))}
           {balance.tokens.length > 5 && (
-            <Text color="gray">
+            <text fg={MUTED}>
               {'  '}+{balance.tokens.length - 5} more
-            </Text>
+            </text>
           )}
-        </Box>
+        </box>
       )}
-    </Box>
+    </box>
   );
 }

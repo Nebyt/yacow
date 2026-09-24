@@ -1,7 +1,8 @@
-import React from 'react';
-import { Box, Text, useApp } from 'ink';
-import SelectInput from 'ink-select-input';
+import { useRenderer } from '@opentui/react';
+import type { ReactNode } from 'react';
 import { useStore } from '../state/store.js';
+import { MenuSelect } from '../components/MenuSelect.js';
+import { PageHeading } from '../components/Page.js';
 
 interface Item {
   label: string;
@@ -16,25 +17,27 @@ const ITEMS: Item[] = [
 ];
 
 /** First-run menu (plan §3 Op 1). Arrow-navigable (backlog #5). */
-export function Onboarding(): React.ReactElement {
-  const { exit } = useApp();
+export function Onboarding(): ReactNode {
+  const renderer = useRenderer();
   const { setRoute } = useStore();
 
   const onSelect = (item: Item) => {
     if (item.value === 'quit') {
-      exit();
+      renderer.destroy();
       return;
     }
     setRoute(item.value);
   };
 
   return (
-    <Box flexDirection="column">
-      <Text bold>Welcome to YACOW</Text>
-      <Text color="gray">Use ↑/↓ and Enter, or the shortcut keys below.</Text>
-      <Box marginTop={1}>
-        <SelectInput items={ITEMS} onSelect={onSelect} />
-      </Box>
-    </Box>
+    <box flexDirection="column">
+      <PageHeading
+        title="Welcome to YACOW"
+        subtitle="Use ↑/↓ and Enter, or the shortcut keys below."
+      />
+      <box marginTop={1}>
+        <MenuSelect items={ITEMS} onSelect={onSelect} />
+      </box>
+    </box>
   );
 }

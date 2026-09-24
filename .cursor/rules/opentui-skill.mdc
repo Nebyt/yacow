@@ -1,0 +1,22 @@
+---
+description: Always load the OpenTUI skill before YACOW work, especially TUI
+alwaysApply: true
+---
+
+# OpenTUI skill is required
+
+Before implementing, reviewing, or debugging **anything** in this repo — and
+**especially** terminal UI (`src/cli.tsx`, `src/app.tsx`, `src/pages/`,
+`src/components/`, `scripts/smoke.tsx`) — read and follow the OpenTUI skill at
+`~/.agents/skills/opentui/SKILL.md`. Then open the skill docs it points at for
+the task (React bindings, layout, keyboard, testing, components).
+
+Do not guess OpenTUI APIs from Ink habits or from prior session memory. Check
+the skill first: lowercase intrinsics (`<box>`, `<text>`, `<input>`,
+`<select>`), default colours (`#FFFFFF` text/cursor, dark select fills),
+`flexShrink` / Yoga overflow, `useKeyboard`, `testRender`.
+
+YACOW is `@opentui/core` + `@opentui/react` on Bun 1.3+ (decision 2.1). QR
+codes stay on the `qrcode` package (decision 6.10), not `@opentui/qrcode`.
+Theme-aware text uses `FG` / `MUTED` / `ACCENT` (decision 6.12); never a bare
+`<input>` — use `TextInput`.

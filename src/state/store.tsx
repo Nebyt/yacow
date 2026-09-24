@@ -1,8 +1,14 @@
 import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
+import { createHostClipboard } from '@opentui/core';
 import { DEFAULT_NETWORK, type NetworkName } from '../config/networks.js';
 import type { Plate } from '../crypto/plate.js';
 import { listWallets } from '../wallet/discoverWallets.js';
-import clipboard from 'clipboardy';
+
+let hostClipboard: ReturnType<typeof createHostClipboard> | null = null;
+function clipboard(): ReturnType<typeof createHostClipboard> {
+  if (hostClipboard == null) hostClipboard = createHostClipboard();
+  return hostClipboard;
+}
 
 export type Route =
   | 'providerSetup'
@@ -69,7 +75,7 @@ export function AppProvider({
   initialWalletList,
   initialActiveWallet = null,
   children,
-}: AppProviderProps): React.ReactElement {
+}: AppProviderProps): React.ReactNode {
   const [walletList, setWalletList] = useState<string[]>(
     initialWalletList ?? (initialHasWallet ? ['(wallet)'] : []),
   );
@@ -108,10 +114,15 @@ export function AppProvider({
       return;
     }
     try {
-      await clipboard.write(receiveAddress);
-      setInfoMessage('Address copied to clipboard.');
+      const result = await clipboard().writeText(receiveAddress);
+      if (result.status !== 'written') {
+        setErrorMessage('Failed to copy address to clipboard.');
+        showError();
+        return;
+      }
+      setInfoMessage('Address is copied to clipboard.');
       showInfo();
-    } catch (error) {
+    } catch {
       setErrorMessage('Failed to copy address to clipboard.');
       showError();
     }

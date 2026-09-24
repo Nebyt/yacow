@@ -1,8 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { Box, Text } from 'ink';
-import SelectInput from 'ink-select-input';
-import TextInput from 'ink-text-input';
-import Spinner from 'ink-spinner';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { NETWORKS, type NetworkName } from '../config/networks.js';
 import { saveProviderKey, testProviderKey } from '../config/providerSetup.js';
 import {
@@ -15,6 +11,11 @@ import {
 } from '../config/providerStatus.js';
 import { PROVIDER_LABELS, type ProviderId } from '../net/provider/types.js';
 import { useStore } from '../state/store.js';
+import { MenuSelect } from '../components/MenuSelect.js';
+import { PageHeading } from '../components/Page.js';
+import { ProviderCredentialField } from '../components/ProviderCredentialField.js';
+import { Working } from '../components/Working.js';
+import { FG, INFO, MUTED, WARNING } from '../components/theme.js';
 
 export interface SettingsProps {
   /** Injected in tests; the real page reads them from user settings. */
@@ -39,8 +40,6 @@ function actionsFor(
 ): { label: string; action: Action }[] {
   const items: { label: string; action: Action }[] = [];
 
-  // A Koios token covers every network, so its entry says so instead of naming
-  // one chain (decision 4.8).
   const scopeOf = (row: ProviderRow, cell: ProviderRow['cells'][number]): string =>
     row.perNetwork ? `for ${cell.scopeLabel}` : '(all networks)';
 
@@ -94,41 +93,34 @@ function actionsFor(
   return items;
 }
 
-/** The provider x network key grid (plan §12.6). Keys are shown masked, always. */
-function Grid({
-  rows,
-  network,
-}: {
-  rows: ProviderRow[];
-  network: NetworkName;
-}): React.ReactElement {
+function Grid({ rows, network }: { rows: ProviderRow[]; network: NetworkName }): ReactNode {
   return (
-    <Box flexDirection="column">
+    <box flexDirection="column">
       {rows.map((row) => (
-        <Box key={row.provider} flexDirection="column" marginTop={1}>
-          <Text bold>
-            {row.label} <Text color="gray">— {row.roleLabel}</Text>
-          </Text>
+        <box key={row.provider} flexDirection="column" marginTop={1}>
+          <text fg={FG}>
+            <strong>{row.label}</strong>
+            <span fg={MUTED}> — {row.roleLabel}</span>
+          </text>
           {row.cells.map((cell) => {
-            // An account-wide cell is always in play, so it is never dimmed.
             const active = cell.scope === 'all' || cell.scope === network;
             return (
-              <Text key={cell.scope} color={active ? 'yellow' : 'gray'}>
+              <text key={cell.scope} fg={active ? WARNING : MUTED}>
                 {'  '}
                 {cell.scopeLabel}: {cell.isSet ? cell.masked : 'not set'}
                 {cell.scope === network ? '  (active)' : ''}
-              </Text>
+              </text>
             );
           })}
-        </Box>
+        </box>
       ))}
-    </Box>
+    </box>
   );
 }
 
-export function Settings({ rows, summary }: SettingsProps): React.ReactElement {
+export function Settings({ rows, summary }: SettingsProps): ReactNode {
   const { network, setRoute, setCapturing } = useStore();
-  const [version, setVersion] = useState(0); // bumped to re-read after a write
+  const [version, setVersion] = useState(0);
   const [step, setStep] = useState<Step>('menu');
   const [target, setTarget] = useState<{
     provider: ProviderId;
@@ -139,8 +131,6 @@ export function Settings({ rows, summary }: SettingsProps): React.ReactElement {
   const [message, setMessage] = useState<string | null>(null);
 
   const current = useMemo(() => rows ?? providerRows(), [rows, version]);
-  // Both memos must run unconditionally (hook rules); the injected props simply
-  // short-circuit the disk read inside them.
   const headline = useMemo(
     () => summary ?? describeActiveProviders(network),
     [summary, network, version],
@@ -226,7 +216,6 @@ export function Settings({ rows, summary }: SettingsProps): React.ReactElement {
       setStep('key');
       return;
     }
-    // Only a key that answered gets written, and only for its own network.
     saveProviderKey(target.provider, target.network, trimmed === '' ? null : trimmed);
     setMessage(
       target.provider === 'koios'
@@ -238,52 +227,44 @@ export function Settings({ rows, summary }: SettingsProps): React.ReactElement {
   };
 
   return (
-    <Box flexDirection="column">
-      <Text bold>Settings — data providers</Text>
-      <Text color="gray">{headline}</Text>
+    <box flexDirection="column">
+      <PageHeading title="Settings — data providers" subtitle={headline} />
       <Grid rows={current} network={network} />
 
       {message != null && (
-        <Box marginTop={1}>
-          <Text color="cyan">{message}</Text>
-        </Box>
+        <box marginTop={1}>
+          <text fg={INFO}>{message}</text>
+        </box>
       )}
 
       {step === 'menu' && (
-        <Box marginTop={1}>
-          <SelectInput items={items} onSelect={onSelect} />
-        </Box>
+        <box marginTop={1}>
+          <MenuSelect items={items} onSelect={onSelect} />
+        </box>
       )}
 
       {step === 'key' && target != null && (
-        <Box flexDirection="column" marginTop={1}>
-          <Text>
-            {PROVIDER_LABELS[target.provider]}
-            {target.provider === 'koios'
-              ? ' token (all networks)'
-              : ` key for ${target.scopeLabel}`}
-            :
-          </Text>
-          <Box>
-            <Text>Key: </Text>
-            <TextInput value={key} onChange={setKey} onSubmit={submitKey} mask="*" />
-          </Box>
-          <Text color="gray">
-            {target.provider === 'koios'
-              ? 'Leave empty to use the anonymous tier.'
-              : 'The project id must match this network.'}
-          </Text>
-        </Box>
+        <box marginTop={1}>
+          <ProviderCredentialField
+            prompt={`${PROVIDER_LABELS[target.provider]}${
+              target.provider === 'koios'
+                ? ' token (all networks)'
+                : ` key for ${target.scopeLabel}`
+            }
+            :`}
+            hint={
+              target.provider === 'koios'
+                ? 'Leave empty to use the anonymous tier.'
+                : 'The project id must match this network.'
+            }
+            value={key}
+            onChange={setKey}
+            onSubmit={submitKey}
+          />
+        </box>
       )}
 
-      {step === 'busy' && (
-        <Box marginTop={1}>
-          <Text color="cyan">
-            <Spinner type="dots" />
-          </Text>
-          <Text> Contacting the provider…</Text>
-        </Box>
-      )}
-    </Box>
+      {step === 'busy' && <Working label="Contacting the provider…" />}
+    </box>
   );
 }

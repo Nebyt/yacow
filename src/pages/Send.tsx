@@ -1,12 +1,14 @@
-import React from 'react';
-import { Box, Text } from 'ink';
+import type { ReactNode } from 'react';
+import { PageHeading } from '../components/Page.js';
 
 /** Send flow (plan §3 Op 5). Placeholder for M0. */
-export function Send(): React.ReactElement {
+export function Send(): ReactNode {
   return (
-    <Box flexDirection="column">
-      <Text bold>Send</Text>
-      <Text color="gray">Recipient, asset/amount, review, and submit land here (M5).</Text>
-    </Box>
+    <box flexDirection="column">
+      <PageHeading
+        title="Send"
+        subtitle="Recipient, asset/amount, review, and submit land here (M5)."
+      />
+    </box>
   );
 }

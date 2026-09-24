@@ -2,7 +2,7 @@
 
 **Yet Another Cardano Only Wallet.**
 
-A lightweight interactive terminal wallet for Cardano. The locked UI stack is [OpenTUI](https://github.com/anomalyco/opentui) (`@opentui/react`); the current tree still runs on Ink until that migration. Run `yacow` and navigate pages (Onboarding / Wallets / Dashboard / Send / Receive / Network / Settings) with arrow keys and single-key shortcuts — like Claude Code, lazygit or OpenCode.
+A lightweight interactive terminal wallet for Cardano. The TUI is [OpenTUI](https://github.com/anomalyco/opentui) (`@opentui/react`). Run `yacow` and navigate pages (Onboarding / Wallets / Dashboard / Send / Receive / Network / Settings) with arrow keys and single-key shortcuts — like Claude Code, lazygit or OpenCode.
 
 > Status: app shell, wallet create/restore, keystore, network switching, Blockfrost / Koios provider layer, dashboard **balance + stake address + pool delegation**, and **Receive** (address + QR + clipboard copy) are in place. Transactions list and send are still to come. There is **no** paper-wallet tool.
 
@@ -13,14 +13,14 @@ YACOW is a full-screen interactive app — run it in a **real terminal** (it nee
 ```bash
 cd ~/yacow
 bun install        # first time only
-bun run start      # builds are cached in dist/; runs `node dist/cli.js`
+bun run start      # bun src/cli.tsx (needs Bun 1.3+)
 ```
 
 Other ways to launch:
 
 ```bash
-bun run dev        # rebuild (tsc) then run — use after changing source
-bun run build && node dist/cli.js
+bun run dev        # same as start
+bun src/cli.tsx
 ```
 
 Install it as a global `yacow` command (from this checkout):
@@ -49,11 +49,11 @@ Prefer not to build? `bun run smoke` prints the rendered screens non-interactive
 
 ```bash
 bun install
-bun run build      # tsc -> dist/
-bun run start      # run the built CLI
+bun run typecheck  # tsc --noEmit
+bun run start      # OpenTUI app via bun
 bun run test       # jest (engine tests)
-bun run smoke      # build + UI render smoke
-bun run test:all      # jest + smoke
+bun run smoke      # OpenTUI test renderer
+bun run test:all   # jest + smoke
 bun run format        # Prettier write (decision 2.7)
 bun run format:check  # Prettier check, no writes
 ```
@@ -65,9 +65,9 @@ bun run format:check  # Prettier check, no writes
 - `src/net/` — the provider layer (`provider/`: Blockfrost + Koios adapters behind one `ChainProvider`, with failover), address discovery, protocol parameters
 - `src/security/` — password strength, secret buffers, file permissions
 - `src/wallet/` — keystore, balance; history (M3) and tx building (M5) still planned
-- `src/pages/`, `src/components/`, `src/state/` — the TUI (Ink today; OpenTUI per decision 2.1)
+- `src/pages/`, `src/components/`, `src/state/` — the OpenTUI app
 
-Engine modules (`config/ crypto/ net/ security/ wallet/`) are UI-independent and unit-tested with Jest; pages/components are covered by the render smoke while the Ink tree remains.
+Engine modules (`config/ crypto/ net/ security/ wallet/`) are UI-independent and unit-tested with Jest; pages/components are covered by `bun run smoke` (`@opentui/react/test-utils`).
 
 ## Shortcuts
 
