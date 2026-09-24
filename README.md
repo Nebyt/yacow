@@ -34,7 +34,7 @@ yacow
 
 ## Chain data: Blockfrost or Koios
 
-YACOW reads the chain through **[Blockfrost](https://blockfrost.io)** or **[Koios](https://koios.rest)** — pick one on first run and paste its key. (The Yoroi backend YACOW used to call is being shut down and is no longer supported.)
+YACOW reads the chain through **[Blockfrost](https://blockfrost.io)** or **[Koios](https://koios.rest)** — pick one on first run and paste its key.
 
 - **Blockfrost keys are per network.** A project id is scoped to one chain (`mainnet…` / `preprod…`), so YACOW holds both at once and switching network picks the right one with no re-prompting. Switching to a chain you have not set up yet offers to add a key for it, leaving the configured one alone.
 - **Koios uses one account-wide token.** Its networks are separate hosts, but the token is issued per account and only sets your rate-limit tier, so you enter it once and it works on both chains. Koios also works with **no token at all** (anonymous tier, lower rate limit); Blockfrost does not.

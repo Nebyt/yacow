@@ -20,7 +20,7 @@ describe('provider ids', () => {
   it('accepts the shipped adapters and rejects anything else', () => {
     expect(isProviderId('blockfrost')).toBe(true);
     expect(isProviderId('koios')).toBe(true);
-    expect(isProviderId('yoroi')).toBe(false); // forbidden backend (decision 4.1)
+    expect(isProviderId('other')).toBe(false);
     expect(isProviderId('')).toBe(false);
   });
 });

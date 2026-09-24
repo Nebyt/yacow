@@ -63,7 +63,7 @@ describe('file handling', () => {
     writeFileSync(
       providersPath(home),
       JSON.stringify({
-        primary: 'yoroi', // forbidden backend (decision 4.1)
+        primary: 'not-a-provider',
         fallback: 'koios',
         keys: {
           blockfrost: { preprod: BF_PREPROD, preview: 'nope', mainnet: 42 },
@@ -255,7 +255,7 @@ describe('environment overrides', () => {
   it('ignores a nonsense provider name in the env', () => {
     const home = configuredHome();
     expect(
-      resolveProviders('preprod', { homeDir: home, env: { [ENV_VARS.primary]: 'yoroi' } }).primary
+      resolveProviders('preprod', { homeDir: home, env: { [ENV_VARS.primary]: 'not-a-provider' } }).primary
         ?.provider,
     ).toBe('blockfrost');
   });

@@ -5,8 +5,8 @@
 // the interface and never learns which backend answered, never sees an API key
 // and never issues a `fetch` of its own.
 //
-// The Yoroi backend this replaces is forbidden (decision 4.1): it is being shut
-// down, so no method here may map to a `yoroiwallet.com` URL.
+// Vendor wallet backends are forbidden (decision 4.1). Adapters talk only to
+// Blockfrost and Koios.
 //
 // Normalisation rules every adapter must honour:
 //   - amounts (lovelace and asset quantities) are DECIMAL STRINGS, never

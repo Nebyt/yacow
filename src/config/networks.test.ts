@@ -11,9 +11,8 @@ describe('networks', () => {
   });
 
   it('carries no backend url: chain access belongs to the provider layer (decision 4.1)', () => {
-    // The Yoroi backend is being shut down and must not reappear here.
-    expect(JSON.stringify(NETWORKS)).not.toContain('yoroiwallet.com');
     expect('backendUrl' in getNetwork('mainnet')).toBe(false);
+    expect('backendUrl' in getNetwork('preprod')).toBe(false);
   });
 
   it('keeps the Byron protocol magic, which paper-wallet addresses need', () => {

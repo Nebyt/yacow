@@ -1,9 +1,9 @@
 // Protocol parameters, from the live chain (decision 4.6).
 //
-// They used to be hardcoded next to the Yoroi backend URL, which meant a fee
-// change on chain would silently make every transaction we build wrong. Now
-// they come from the provider and are cached: they only move at an epoch
-// boundary (5 days), so re-fetching them per transaction would be waste.
+// They used to be hardcoded on the network config, which meant a fee change
+// on chain would silently make every transaction we build wrong. Now they
+// come from the provider and are cached: they only move at an epoch boundary
+// (5 days), so re-fetching them per transaction would be waste.
 import type { NetworkName } from '../config/networks.js';
 import type { ChainProvider, ProtocolParams } from './provider/types.js';
 

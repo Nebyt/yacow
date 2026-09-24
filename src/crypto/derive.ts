@@ -1,5 +1,5 @@
 // CIP1852 key derivation + Shelley base-address construction.
-// Ports the derivation used in yoroi-extension plate.js / numbersConfig.js.
+// CIP-1852 paths (`m/1852'/1815'/0'`) and Shelley base addresses via CSL.
 import type { Bip32PrivateKey, Bip32PublicKey } from '@emurgo/cardano-serialization-lib-nodejs';
 import { RustModule } from './rust.js';
 import { mnemonicToRootKey } from './mnemonic.js';

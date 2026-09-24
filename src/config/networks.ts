@@ -1,11 +1,9 @@
-// Network definitions lifted from yoroi-extension's prepackaged networks.js.
-// Only mainnet and preprod are supported (per plan §3 Op 0).
+// Network definitions. Only mainnet and preprod are supported (per plan §3 Op 0).
 //
 // There is deliberately NO backend URL here: chain data comes from the provider
-// layer (`src/net/provider/`), whose hosts belong to the adapters. The Yoroi
-// backend this file used to name is forbidden -- it is being shut down
-// (decision 4.1). Protocol parameters likewise come from the live provider
-// (decision 4.6); see `src/net/protocolParams.ts` for the offline fallback.
+// layer (`src/net/provider/`), whose hosts belong to the adapters (decision 4.1).
+// Protocol parameters likewise come from the live provider (decision 4.6);
+// see `src/net/protocolParams.ts` for the offline fallback.
 
 export type NetworkName = 'mainnet' | 'preprod';
 

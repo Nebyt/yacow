@@ -1,6 +1,5 @@
-// Wallet "plate" (CIP4 checksum): the HADA-1234 style icon/label Yoroi shows
-// per wallet. Ports yoroi-extension plate.js (walletChecksum over the account
-// public key bytes).
+// Wallet "plate" (CIP4 checksum): the HADA-1234 style icon/label shown per
+// wallet (`walletChecksum` over the account public key bytes).
 import { walletChecksum, type WalletChecksum } from '@emurgo/cip4-js';
 import type { Bip32PrivateKey } from '@emurgo/cardano-serialization-lib-nodejs';
 import { accountPublicKeyHex } from './derive.js';

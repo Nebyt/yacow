@@ -1,5 +1,5 @@
 // Mnemonic generation/validation + root-key derivation.
-// Ports yoroi-extension app/api/ada/lib/cardanoCrypto/cryptoWallet.js.
+// BIP39 mnemonic → CSL root key (`Bip32PrivateKey.from_bip39_entropy`).
 import * as bip39 from 'bip39';
 import type { Bip32PrivateKey } from '@emurgo/cardano-serialization-lib-nodejs';
 import { RustModule } from './rust.js';
