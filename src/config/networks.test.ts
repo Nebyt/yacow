@@ -15,9 +15,9 @@ describe('networks', () => {
     expect('backendUrl' in getNetwork('preprod')).toBe(false);
   });
 
-  it('keeps the Byron protocol magic, which paper-wallet addresses need', () => {
-    expect(getNetwork('mainnet').byronProtocolMagic).toBe(764824073);
-    expect(getNetwork('preprod').byronProtocolMagic).toBe(1);
+  it('carries no Byron protocol magic: Byron derivation is out of the project (decision 1.7)', () => {
+    expect('byronProtocolMagic' in getNetwork('mainnet')).toBe(false);
+    expect('byronProtocolMagic' in getNetwork('preprod')).toBe(false);
   });
 
   it('validates network names', () => {
