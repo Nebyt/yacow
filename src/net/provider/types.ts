@@ -198,11 +198,44 @@ export interface ChainProvider {
   /** Reachability + credential + network check. Never throws on a down backend. */
   healthCheck(): Promise<HealthStatus>;
 
-  // Staking is out of v1 scope (decision 1.1) but the contract reserves it so
-  // the adapters can grow into it without a breaking change. Optional: callers
-  // must feature-detect before use.
+  // Staking READS are in use (decision 6.11: the dashboard shows the stake
+  // address and the current pool); staking ACTIONS stay out of v1 (1.7).
+  // Optional: callers must feature-detect before use.
   getAccountState(stakeAddress: string): Promise<AccountState | null>;
   getPoolInfo(poolId: string): Promise<PoolInfo | null>;
+
+  // --- account-level lookups (plan §14, B12) -------------------------------
+  //
+  // Every address YACOW derives shares one staking credential, so the whole
+  // wallet can be read through its reward address instead of one request per
+  // address: on Blockfrost the per-address scan cost 60 requests / 7.1s for a
+  // wallet with ONE used address (measured live 2026-10-05). Both methods are
+  // optional -- an adapter that cannot answer one omits it and the caller falls
+  // back to the per-address scan (decision 4.7, as amended by B12).
+
+  /**
+   * Every address the account has EVER used, both chains, order irrelevant.
+   *
+   * Koios deliberately does NOT implement this. Its `account_addresses` returns
+   * only the addresses that hold a UTxO right now (verified live 2026-10-05: 1
+   * address against Blockfrost's 170 for the same account), so a wallet that
+   * spent an output would look smaller than it is and the local gap-limit walk
+   * could offer an already-used address as "next unused". Asking per address is
+   * both correct and cheap on Koios, which answers a whole window in one
+   * batched call.
+   */
+  getAccountAddresses?(stakeAddress: string): Promise<string[]>;
+
+  /**
+   * Spendable holdings of the whole account: UTxO-based lovelace + native
+   * tokens, with unwithdrawn rewards EXCLUDED. `null` when the chain has never
+   * seen the account (a fresh wallet, not an error).
+   *
+   * On Blockfrost that is `controlled_amount - withdrawable_amount`: the
+   * "controlled" figure includes rewards, and reporting it as the balance
+   * over-states what the wallet can spend (measured ~5x on a live account).
+   */
+  getAccountBalance?(stakeAddress: string): Promise<Balance | null>;
 }
 
 // ---------------------------------------------------------------------------

@@ -264,3 +264,65 @@ describe('optional staking methods', () => {
     await expect(provider.getPoolInfo?.('pool1')).resolves.toBeNull();
   });
 });
+
+// B12: the account-level methods are optional, and the wrapper must not pretend
+// a backend can answer when it cannot -- an empty address list is
+// indistinguishable from a fresh wallet, which is the one wrong answer here.
+describe('optional account methods', () => {
+  const STAKE = 'stake_test1account';
+
+  it('are absent when no provider implements them', () => {
+    const provider = createFallbackProvider(stub('blockfrost'), stub('koios'));
+    expect(provider.getAccountAddresses).toBeUndefined();
+    expect(provider.getAccountBalance).toBeUndefined();
+  });
+
+  it('are served by the secondary alone when only it implements them', async () => {
+    const primary = stub('blockfrost');
+    const secondary = stub('koios');
+    secondary.getAccountBalance = jest.fn(async () => ({ lovelace: '7', assets: [] }));
+
+    const provider = createFallbackProvider(primary, secondary);
+    await expect(provider.getAccountBalance?.(STAKE)).resolves.toEqual({
+      lovelace: '7',
+      assets: [],
+    });
+    expect(provider.lastServedBy).toBe('koios');
+  });
+
+  it('do not send the primary into cooldown when only the secondary failed', async () => {
+    // The primary never had a say in this request, so its health is unchanged.
+    const primary = stub('blockfrost');
+    const secondary = stub('koios');
+    secondary.getAccountBalance = jest.fn(async () => {
+      throw new ProviderUnavailableError('down', { provider: 'koios' });
+    });
+
+    const provider = createFallbackProvider(primary, secondary);
+    await expect(provider.getAccountBalance?.(STAKE)).rejects.toThrow(ProviderUnavailableError);
+    expect(provider.primaryCoolingDown).toBe(false);
+  });
+
+  it('fail over to a secondary that also implements the method', async () => {
+    const primary = stub('blockfrost');
+    const secondary = stub('koios');
+    primary.getAccountAddresses = jest.fn(async () => {
+      throw new ProviderRateLimitError('429', { provider: 'blockfrost' });
+    });
+    secondary.getAccountAddresses = jest.fn(async () => ['addr_a']);
+
+    const provider = createFallbackProvider(primary, secondary);
+    await expect(provider.getAccountAddresses?.(STAKE)).resolves.toEqual(['addr_a']);
+    expect(provider.lastServedBy).toBe('koios');
+  });
+
+  it('propagate the failure when the only capable provider is down', async () => {
+    const primary = stub('blockfrost');
+    primary.getAccountBalance = jest.fn(async () => {
+      throw new ProviderUnavailableError('down', { provider: 'blockfrost' });
+    });
+
+    const provider = createFallbackProvider(primary, stub('koios'));
+    await expect(provider.getAccountBalance?.(STAKE)).rejects.toThrow(ProviderUnavailableError);
+  });
+});

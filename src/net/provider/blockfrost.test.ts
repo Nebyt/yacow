@@ -467,3 +467,75 @@ describe('rate limiting', () => {
     expect(clock).toBe(1500);
   });
 });
+
+// B12 (plan §14): the account path. One lookup instead of a request per
+// derived address -- 60 requests / 7.1s for a wallet with a single used
+// address, measured live 2026-10-05.
+describe('account lookups', () => {
+  const STAKE = 'stake_test1account';
+
+  it('lists every address the account has used, across pages', async () => {
+    reply(
+      `/accounts/${STAKE}/addresses?count=100&page=1`,
+      Array.from({ length: MAX_PAGE_SIZE }, (_, i) => ({ address: `addr_${i}` })),
+    );
+    reply(`/accounts/${STAKE}/addresses?count=100&page=2`, [{ address: 'addr_last' }]);
+
+    await expect(provider().getAccountAddresses?.(STAKE)).resolves.toHaveLength(MAX_PAGE_SIZE + 1);
+  });
+
+  it('reports no addresses for an account the chain has never seen', async () => {
+    // A fresh wallet is the normal case, not an error (contract in types.ts).
+    reply(`/accounts/${STAKE}/addresses?count=100&page=1`, { error: 'Not Found' }, 404);
+    await expect(provider().getAccountAddresses?.(STAKE)).resolves.toEqual([]);
+  });
+
+  it('subtracts unwithdrawn rewards from the account balance', async () => {
+    // `controlled_amount` includes rewards. Reporting it as the balance would
+    // over-state what the wallet can spend -- measured 536.6 ADA against a real
+    // 96.2 ADA on a live account.
+    reply(`/accounts/${STAKE}`, {
+      stake_address: STAKE,
+      active: true,
+      pool_id: null,
+      controlled_amount: '536667357',
+      withdrawable_amount: '440440166',
+      withdrawals_sum: '0',
+    });
+    reply(`/accounts/${STAKE}/addresses/assets?count=100&page=1`, [
+      { unit: UNIT, quantity: '7' },
+      // ADA is not a native token: this row must not add to the lovelace total.
+      { unit: 'lovelace', quantity: '999999999' },
+    ]);
+
+    await expect(provider().getAccountBalance?.(STAKE)).resolves.toEqual({
+      lovelace: '96227191',
+      assets: [{ unit: UNIT, quantity: '7' }],
+    });
+  });
+
+  it('answers for an account that holds funds but was never registered', async () => {
+    // Fresh wallet that only ever received: `registered: false`, and the money
+    // is still reported (verified live 2026-10-05).
+    reply(`/accounts/${STAKE}`, {
+      stake_address: STAKE,
+      active: false,
+      pool_id: null,
+      controlled_amount: '2500000',
+      withdrawable_amount: '0',
+      withdrawals_sum: '0',
+    });
+    reply(`/accounts/${STAKE}/addresses/assets?count=100&page=1`, []);
+
+    await expect(provider().getAccountBalance?.(STAKE)).resolves.toEqual({
+      lovelace: '2500000',
+      assets: [],
+    });
+  });
+
+  it('returns null for an unknown account without asking for its assets', async () => {
+    reply(`/accounts/${STAKE}`, { error: 'Not Found' }, 404);
+    // No assets interceptor: a second request would fail the test.
+    await expect(provider().getAccountBalance?.(STAKE)).resolves.toBeNull();
+  });
+});

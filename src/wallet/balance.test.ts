@@ -227,3 +227,105 @@ describe('request economy', () => {
     expect(result.usedAddresses).toEqual([usedAddress]); // ...one queried
   });
 });
+
+// B12 (plan §14.6): prefer the account-level balance, and never let a failed
+// optimisation turn into a broken dashboard.
+describe('account-level balance', () => {
+  const STAKE = 'stake_test1account';
+
+  it('uses one account lookup instead of a request per address', async () => {
+    const asked: { account: string[]; perAddress: string[][] } = { account: [], perAddress: [] };
+    const chain = {
+      id: 'blockfrost',
+      network: 'preprod',
+      filterUsedAddresses: async () => [],
+      getBalanceForAddresses: async (addresses: string[]) => {
+        asked.perAddress.push(addresses);
+        return { lovelace: '1', assets: [] };
+      },
+      getAssetInfo: async () => [],
+      getAccountBalance: async (stakeAddress: string) => {
+        asked.account.push(stakeAddress);
+        return { lovelace: '96227191', assets: [] };
+      },
+    } as unknown as ChainProvider;
+
+    const result = await fetchWalletBalance(chain, accountPubKey, 0, { stakeAddress: STAKE });
+
+    expect(asked.account).toEqual([STAKE]);
+    expect(asked.perAddress).toEqual([]);
+    expect(result.ada).toBe('96.227191');
+  });
+
+  it('reads "the chain has never seen it" as an empty wallet, with no request', async () => {
+    const chain = {
+      id: 'blockfrost',
+      network: 'preprod',
+      filterUsedAddresses: async () => [],
+      getBalanceForAddresses: async () => {
+        throw new Error('a fresh wallet must not need a balance call');
+      },
+      getAssetInfo: async () => [],
+      getAccountBalance: async () => null,
+    } as unknown as ChainProvider;
+
+    const result = await fetchWalletBalance(chain, accountPubKey, 0, {
+      stakeAddress: STAKE,
+      gapLimit: 3,
+    });
+    expect(result).toMatchObject({ lovelace: '0', ada: '0', usedAddresses: [] });
+  });
+
+  it('falls back to the per-address total when the account call fails', async () => {
+    // Learn the first derived address so exactly one address counts as used.
+    const derived = await fetchWalletBalance(
+      {
+        id: 'koios',
+        network: 'preprod',
+        filterUsedAddresses: async () => [],
+        getBalanceForAddresses: async () => ({ lovelace: '0', assets: [] }),
+        getAssetInfo: async () => [],
+      } as unknown as ChainProvider,
+      accountPubKey,
+      0,
+      { gapLimit: 3 },
+    );
+    const usedAddress = derived.addresses[0];
+
+    const chain = {
+      id: 'blockfrost',
+      network: 'preprod',
+      filterUsedAddresses: async (addresses: string[]) =>
+        addresses.filter((address) => address === usedAddress),
+      getBalanceForAddresses: async () => ({ lovelace: '2000000', assets: [] }),
+      getAssetInfo: async () => [],
+      getAccountBalance: async () => {
+        throw new Error('429 Too Many Requests');
+      },
+    } as unknown as ChainProvider;
+
+    const result = await fetchWalletBalance(chain, accountPubKey, 0, {
+      stakeAddress: STAKE,
+      gapLimit: 3,
+    });
+    expect(result).toMatchObject({ lovelace: '2000000', ada: '2' });
+  });
+
+  it('uses the per-address path when the provider has no account method', async () => {
+    // Koios today: its account address list is not a used set, so discovery and
+    // the total stay per address (batched).
+    const chain = {
+      id: 'koios',
+      network: 'preprod',
+      filterUsedAddresses: async () => [],
+      getBalanceForAddresses: async () => ({ lovelace: '1', assets: [] }),
+      getAssetInfo: async () => [],
+    } as unknown as ChainProvider;
+    expect(chain.getAccountBalance).toBeUndefined();
+    const result = await fetchWalletBalance(chain, accountPubKey, 0, {
+      stakeAddress: STAKE,
+      gapLimit: 3,
+    });
+    expect(result.lovelace).toBe('0'); // fresh wallet: nothing used, nothing asked
+  });
+});

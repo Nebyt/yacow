@@ -69,27 +69,36 @@ export function createFallbackProvider(
     return coolingDown() && secondary != null ? secondary : primary;
   }
 
-  async function run<T>(call: (provider: ChainProvider) => Promise<T>): Promise<T> {
+  async function run<T>(
+    call: (provider: ChainProvider) => Promise<T>,
+    candidates: readonly ChainProvider[] = secondary == null ? [primary] : [primary, secondary],
+  ): Promise<T> {
+    const [first, second = null] = candidates;
+    if (first == null) throw new Error('No provider can serve this request.');
+
     // Known-bad primary: skip straight to the stand-in, no wasted round trip.
-    if (coolingDown() && secondary != null) {
-      const result = await call(secondary);
-      lastServedBy = secondary.id;
+    if (coolingDown() && second != null) {
+      const result = await call(second);
+      lastServedBy = second.id;
       return result;
     }
 
     try {
-      const result = await call(primary);
-      lastServedBy = primary.id;
+      const result = await call(first);
+      lastServedBy = first.id;
       cooldownUntil = 0; // it answered, so stop skipping it
       return result;
     } catch (err) {
       if (!shouldFailover(err)) throw err; // our own bad request: the other backend would fail too
-      noteFailure(err);
-      if (secondary == null) throw err;
+      // Only the primary has a cooldown to enter: an optional account-level
+      // method may be served by the secondary alone, and cooling the primary
+      // down for that would be wrong.
+      if (first === primary) noteFailure(err);
+      if (second == null) throw err;
 
       try {
-        const result = await call(secondary);
-        lastServedBy = secondary.id;
+        const result = await call(second);
+        lastServedBy = second.id;
         return result;
       } catch (secondaryErr) {
         if (err instanceof ProviderError && secondaryErr instanceof ProviderError) {
@@ -160,5 +169,33 @@ export function createFallbackProvider(
     },
   };
 
+  // Optional account-level methods (B12) are exposed only when a backend can
+  // actually serve them. A wrapper that answered "no addresses" for a backend
+  // that cannot answer would look exactly like a fresh wallet, which is the one
+  // mistake this layer must not make.
+  const addressCandidates = providerCandidates(primary, secondary, 'getAccountAddresses');
+  if (addressCandidates.length > 0) {
+    provider.getAccountAddresses = (stakeAddress: string): Promise<string[]> =>
+      run((p) => p.getAccountAddresses?.(stakeAddress) ?? Promise.resolve([]), addressCandidates);
+  }
+
+  const balanceCandidates = providerCandidates(primary, secondary, 'getAccountBalance');
+  if (balanceCandidates.length > 0) {
+    provider.getAccountBalance = (stakeAddress: string): Promise<Balance | null> =>
+      run((p) => p.getAccountBalance?.(stakeAddress) ?? Promise.resolve(null), balanceCandidates);
+  }
+
   return provider;
+}
+
+/** The providers, primary first, that implement an optional method. */
+function providerCandidates(
+  primary: ChainProvider,
+  secondary: ChainProvider | null,
+  method: 'getAccountAddresses' | 'getAccountBalance',
+): ChainProvider[] {
+  return [primary, secondary].filter(
+    (provider): provider is ChainProvider =>
+      provider != null && typeof provider[method] === 'function',
+  );
 }

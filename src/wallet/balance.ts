@@ -69,6 +69,27 @@ export function describeTokens(balance: Balance, metadata: AssetInfo[]): TokenBa
   });
 }
 
+/**
+ * Spendable account balance from the account-level method, or `null` when the
+ * provider cannot answer (B12 / plan §14.6).
+ *
+ * Never throws: this is an optimisation over the per-address total below, and
+ * an optimisation that failed must not turn into a broken dashboard. A `null`
+ * from the provider means "the chain has never seen this account", which the
+ * caller treats exactly like a wallet with no used addresses.
+ */
+async function accountBalance(
+  provider: ChainProvider,
+  stakeAddress: string | undefined,
+): Promise<Balance | null> {
+  if (stakeAddress == null || provider.getAccountBalance == null) return null;
+  try {
+    return await provider.getAccountBalance(stakeAddress);
+  } catch {
+    return null;
+  }
+}
+
 /** Discover the wallet's addresses, then total what they hold. */
 export async function fetchWalletBalance(
   provider: ChainProvider,
@@ -76,14 +97,21 @@ export async function fetchWalletBalance(
   networkId: number,
   options: DiscoveryOptions = {},
 ): Promise<WalletBalance> {
-  const addresses = await discoverAddresses(provider, accountPubKeyHex, networkId, options);
+  // Both halves are independent, and on Blockfrost the account path answers
+  // each of them in one or two requests instead of one per derived address.
+  const [addresses, account] = await Promise.all([
+    discoverAddresses(provider, accountPubKeyHex, networkId, options),
+    accountBalance(provider, options.stakeAddress),
+  ]);
+
   // Only used addresses can hold anything, and on a per-address backend each
   // extra address is another request -- a fresh wallet needs no balance call at
   // all.
   const balance =
-    addresses.used.length === 0
+    account ??
+    (addresses.used.length === 0
       ? emptyBalance()
-      : await provider.getBalanceForAddresses(addresses.used);
+      : await provider.getBalanceForAddresses(addresses.used));
   // Only ask about tokens the wallet actually holds.
   const metadata =
     balance.assets.length === 0

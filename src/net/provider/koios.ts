@@ -136,8 +136,17 @@ interface RawAccountInfo {
   stake_address: string;
   status: string;
   delegated_pool: string | null;
+  /** UTxO-based lovelace: the spendable figure, rewards excluded (see B12). */
+  utxo: string;
   rewards_available: string;
   withdrawals: string;
+}
+
+/** One aggregated token holding of an account (`/account_assets`). */
+interface RawAccountAsset {
+  policy_id: string;
+  asset_name: string | null;
+  quantity: string;
 }
 
 interface RawPoolInfo {
@@ -405,6 +414,36 @@ export function createKoiosProvider(config: KoiosConfig): ChainProvider {
         name: raw.meta_json?.name ?? null,
         margin: raw.margin,
         fixedCost: raw.fixed_cost,
+      };
+    },
+
+    /**
+     * Account-level spendable balance (B12). Two aggregated requests:
+     * `/account_info` gives UTxO-based lovelace (`utxo`, rewards excluded) and
+     * `/account_assets` the token totals -- both verified equal to the sum of
+     * the account's own UTxOs live on 2026-10-05.
+     *
+     * There is deliberately no `getAccountAddresses` here: Koios's
+     * `account_addresses` lists only addresses holding a UTxO right now, which
+     * would silently break discovery (see the contract in types.ts).
+     */
+    async getAccountBalance(stakeAddress: string): Promise<Balance | null> {
+      const rows = await postBatched<RawAccountInfo>('/account_info', '_stake_addresses', [
+        stakeAddress,
+      ]);
+      const raw = rows[0];
+      if (raw == null) return null;
+      const tokens = await postBatched<RawAccountAsset>('/account_assets', '_stake_addresses', [
+        stakeAddress,
+      ]);
+      return {
+        lovelace: raw.utxo,
+        assets: sortAssets(
+          tokens.map((token) => ({
+            unit: assetUnit(token.policy_id, token.asset_name ?? ''),
+            quantity: token.quantity,
+          })),
+        ),
       };
     },
   };

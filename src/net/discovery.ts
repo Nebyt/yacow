@@ -21,6 +21,12 @@ export interface DiscoveryOptions {
   gapLimit?: number;
   /** Hard stop, so a corrupt "everything is used" answer cannot loop forever. */
   maxAddresses?: number;
+  /**
+   * The account's reward address. When it is set AND the provider can list the
+   * account's addresses, discovery asks about the account once instead of about
+   * every derived address (B12 / plan §14). Without it nothing changes.
+   */
+  stakeAddress?: string;
 }
 
 export interface ChainAddresses {
@@ -49,11 +55,21 @@ export interface WalletAddresses {
   used: string[];
 }
 
-async function scanChain(
-  provider: ChainProvider,
+/**
+ * Walk one chain in derivation order and stop after `gapLimit` consecutive
+ * unused addresses.
+ *
+ * `usedIn` answers "which of these window addresses are used"; the only
+ * difference between the account path and the per-address scan is where that
+ * answer comes from (B12 §14.5). Everything else -- the gap rule, the window
+ * size, `nextUnused` -- stays identical, which is what keeps the two paths
+ * provably equivalent.
+ */
+async function walkChain(
   accountPubKeyHex: string,
   networkId: number,
   role: number,
+  usedIn: (window: string[]) => Promise<Set<string>>,
   { gapLimit = GAP_LIMIT, maxAddresses = 1000 }: DiscoveryOptions,
 ): Promise<ChainAddresses> {
   const accountPublic = accountPublicKeyFromHex(accountPubKeyHex);
@@ -68,7 +84,7 @@ async function scanChain(
     const window = Array.from({ length: gapLimit }, (_, offset) =>
       baseAddressFromAccountPublic(accountPublic, role, index + offset, networkId),
     );
-    const usedInWindow = new Set(await provider.filterUsedAddresses(window));
+    const usedInWindow = await usedIn(window);
 
     for (const address of window) {
       all.push(address);
@@ -86,6 +102,43 @@ async function scanChain(
   return { role, all, used, nextUnused: all[lastUsed + 1] ?? all[0] };
 }
 
+/**
+ * The account's complete used-address set, or `null` to scan per address.
+ *
+ * `null` covers two cases on purpose: the provider has no account-level method
+ * (Koios, whose `account_addresses` lists current holdings only) and the
+ * account call failing. The per-address scan is the proven path, so an
+ * optimisation that did not work must not become an outage.
+ */
+async function accountUsedSet(
+  provider: ChainProvider,
+  stakeAddress: string | undefined,
+): Promise<Set<string> | null> {
+  if (stakeAddress == null || provider.getAccountAddresses == null) return null;
+  try {
+    return new Set(await provider.getAccountAddresses(stakeAddress));
+  } catch {
+    return null;
+  }
+}
+
+/** Per-address scan for one chain, batched by the adapter where it can. */
+function scanChain(
+  provider: ChainProvider,
+  accountPubKeyHex: string,
+  networkId: number,
+  role: number,
+  options: DiscoveryOptions,
+): Promise<ChainAddresses> {
+  return walkChain(
+    accountPubKeyHex,
+    networkId,
+    role,
+    async (window) => new Set(await provider.filterUsedAddresses(window)),
+    options,
+  );
+}
+
 /** Scan both chains of an account. */
 export async function discoverAddresses(
   provider: ChainProvider,
@@ -93,8 +146,22 @@ export async function discoverAddresses(
   networkId: number,
   options: DiscoveryOptions = {},
 ): Promise<WalletAddresses> {
-  const external = await scanChain(provider, accountPubKeyHex, networkId, ROLE_EXTERNAL, options);
-  const internal = await scanChain(provider, accountPubKeyHex, networkId, ROLE_INTERNAL, options);
+  // One account lookup (when the provider supports it) replaces a request per
+  // address; the local derivation still decides order and the next unused one.
+  const accountUsed = await accountUsedSet(provider, options.stakeAddress);
+  const chain = (role: number): Promise<ChainAddresses> =>
+    accountUsed == null
+      ? scanChain(provider, accountPubKeyHex, networkId, role, options)
+      : walkChain(
+          accountPubKeyHex,
+          networkId,
+          role,
+          async (window) => new Set(window.filter((address) => accountUsed.has(address))),
+          options,
+        );
+
+  const external = await chain(ROLE_EXTERNAL);
+  const internal = await chain(ROLE_INTERNAL);
   return {
     external,
     internal,
