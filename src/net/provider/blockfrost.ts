@@ -142,8 +142,14 @@ interface RawAccount {
   stake_address: string;
   active: boolean;
   pool_id: string | null;
+  /** Includes unwithdrawn rewards -- NOT the spendable balance (see B12). */
+  controlled_amount: string;
   withdrawable_amount: string;
   withdrawals_sum: string;
+}
+
+interface RawAccountAddress {
+  address: string;
 }
 
 interface RawPool {
@@ -472,6 +478,36 @@ export function createBlockfrostProvider(config: BlockfrostConfig): ChainProvide
         name: raw.metadata?.name ?? null,
         margin: raw.margin_cost,
         fixedCost: raw.fixed_cost,
+      };
+    },
+
+    /**
+     * Every address the account has ever used, paged (100/page). This is the
+     * one provider that can answer the used set in bulk: Koios's equivalent
+     * lists current holdings only, so it keeps the per-address scan (B12).
+     */
+    async getAccountAddresses(stakeAddress: string): Promise<string[]> {
+      const rows = await allPages<RawAccountAddress>(`/accounts/${stakeAddress}/addresses`);
+      return rows.map((row) => row.address);
+    },
+
+    /**
+     * Account-level spendable balance (B12): `controlled_amount` minus
+     * `withdrawable_amount` for ADA, plus the account's aggregated native-token
+     * holdings. Two requests regardless of how many addresses the wallet used,
+     * and no UTxO page walking even for a whale.
+     */
+    async getAccountBalance(stakeAddress: string): Promise<Balance | null> {
+      const account = await http.getJson<RawAccount>(`/accounts/${stakeAddress}`, {
+        notFoundAsNull: true,
+      });
+      if (account == null) return null;
+      const spendable =
+        BigInt(account.controlled_amount ?? '0') - BigInt(account.withdrawable_amount ?? '0');
+      const tokenRows = await allPages<RawAmount>(`/accounts/${stakeAddress}/addresses/assets`);
+      return {
+        lovelace: spendable.toString(),
+        assets: toBalance(tokenRows).assets,
       };
     },
   };

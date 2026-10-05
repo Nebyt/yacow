@@ -27,6 +27,7 @@ const HOSKY = `${POLICY_B}484f534b59`;
 const ADDR_A = 'addr_test_a';
 const ADDR_B = 'addr_test_b';
 const ADDR_FRESH = 'addr_test_fresh';
+const STAKE = 'stake_test1account';
 
 let agent: MockAgent;
 
@@ -424,6 +425,87 @@ const CASES: Record<string, Case> = {
     expected: { ok: false, tip: null, network: 'preprod' },
     partial: true,
   },
+
+  // --- B12 (plan §14): the account path ------------------------------------
+  'account balance excludes unwithdrawn rewards': {
+    // Blockfrost reports `controlled_amount` (rewards included, ~5x too big on
+    // the live account this was measured on) and the tokens separately; Koios
+    // reports the UTxO figure and the token totals. The normalised answer must
+    // be the spendable one, in the same asset order.
+    blockfrost: () => {
+      bf.get(`/accounts/${STAKE}`, {
+        stake_address: STAKE,
+        active: true,
+        pool_id: null,
+        controlled_amount: '536667357',
+        withdrawable_amount: '440440166',
+        withdrawals_sum: '0',
+      });
+      bf.get(`/accounts/${STAKE}/addresses/assets?count=100&page=1`, [
+        bfAsset(MILK, '10'),
+        bfAsset(HOSKY, '1'),
+      ]);
+    },
+    koios: () => {
+      ko.post('/account_info', [
+        {
+          stake_address: STAKE,
+          status: 'registered',
+          delegated_pool: null,
+          utxo: '96227191',
+          rewards_available: '440440166',
+          withdrawals: '0',
+        },
+      ]);
+      ko.post('/account_assets', [koAsset(HOSKY, '1'), koAsset(MILK, '10')]);
+    },
+    run: (p) => p.getAccountBalance?.(STAKE) ?? Promise.resolve(null),
+    expected: {
+      lovelace: '96227191',
+      assets: [
+        { unit: MILK, quantity: '10' },
+        { unit: HOSKY, quantity: '1' },
+      ],
+    },
+  },
+
+  'an account that only ever received funds is not an error': {
+    // The fresh-wallet case that B12 had to prove first: nothing was ever
+    // registered or delegated, and the money is still readable.
+    blockfrost: () => {
+      bf.get(`/accounts/${STAKE}`, {
+        stake_address: STAKE,
+        active: false,
+        pool_id: null,
+        controlled_amount: '2500000',
+        withdrawable_amount: '0',
+        withdrawals_sum: '0',
+      });
+      bf.get(`/accounts/${STAKE}/addresses/assets?count=100&page=1`, []);
+    },
+    koios: () => {
+      ko.post('/account_info', [
+        {
+          stake_address: STAKE,
+          status: 'not registered',
+          delegated_pool: null,
+          utxo: '2500000',
+          rewards_available: '0',
+          withdrawals: '0',
+        },
+      ]);
+      ko.post('/account_assets', []);
+    },
+    run: (p) => p.getAccountBalance?.(STAKE) ?? Promise.resolve(null),
+    expected: { lovelace: '2500000', assets: [] },
+  },
+
+  'an unknown account answers null rather than throwing': {
+    blockfrost: () => bf.get(`/accounts/${STAKE}`, { error: 'Not Found' }, 404),
+    koios: () => ko.post('/account_info', []),
+    run: (p) => p.getAccountBalance?.(STAKE) ?? Promise.resolve(null),
+    expected: null,
+  },
 };
 
 function build(id: ProviderId): ChainProvider {
@@ -443,6 +525,18 @@ describe.each(Object.entries(CASES))('%s', (_name, testCase) => {
       // Strict: an extra or missing field on one adapter is a parity break.
       expect(result).toEqual(testCase.expected);
     }
+  });
+});
+
+// Documented divergence (B12): Blockfrost can list every address an account has
+// EVER used, Koios cannot -- its `account_addresses` lists only the addresses
+// holding a UTxO right now (1 against Blockfrost's 170 for the same account).
+// The Koios adapter therefore omits the optional method and discovery keeps its
+// batched per-address scan there. Asserted so the difference stays deliberate.
+describe('account address lists', () => {
+  it('is offered by Blockfrost and deliberately absent on Koios', () => {
+    expect(typeof build('blockfrost').getAccountAddresses).toBe('function');
+    expect(build('koios').getAccountAddresses).toBeUndefined();
   });
 });
 

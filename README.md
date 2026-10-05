@@ -43,6 +43,12 @@ YACOW reads the chain through **[Blockfrost](https://blockfrost.io)** or **[Koio
 
 Press `,` at any time for **Settings**, which shows every key as a masked cell — Blockfrost per network, Koios as one "All networks" entry — and lets you add, replace or remove a single key, swap primary and fallback, or test the connection.
 
+### How the dashboard reads your wallet
+
+Every address YACOW derives shares one staking credential, so the balance is read **once per account** through the wallet's reward address instead of once per address (decision 4.12). On Blockfrost that is three requests — the used-address list, the account totals and the token totals — where the old per-address scan cost 67 requests and 7.5 seconds on a wallet holding six tokens; the same wallet now loads in about one second. Koios answers the account totals in two requests and keeps a batched per-address scan for the address list, because its `account_addresses` endpoint lists only the addresses that currently hold funds, which is not enough to find the next unused receive address.
+
+Only the **spendable** figure is shown: rewards that have not been withdrawn are not part of the balance.
+
 Prefer not to build? `bun run smoke` prints the rendered screens non-interactively (used by the tests).
 
 ## Develop
@@ -62,7 +68,7 @@ bun run format:check  # Prettier check, no writes
 
 - `src/config/` — network definitions (mainnet / preprod), app settings, provider credentials
 - `src/crypto/` — CSL (WASM) loader; mnemonic, CIP1852 derivation, plate
-- `src/net/` — the provider layer (`provider/`: Blockfrost + Koios adapters behind one `ChainProvider`, with failover), address discovery, protocol parameters
+- `src/net/` — the provider layer (`provider/`: Blockfrost + Koios adapters behind one `ChainProvider`, with failover), address discovery (account lookup with a per-address scan fallback), protocol parameters
 - `src/security/` — password strength, secret buffers, file permissions
 - `src/wallet/` — keystore, balance; history (M3) and tx building (M5) still planned
 - `src/pages/`, `src/components/`, `src/state/` — the OpenTUI app

@@ -3,6 +3,7 @@ import { getNetwork, type NetworkName } from '../config/networks.js';
 import { getProvider } from '../net/provider/registry.js';
 import type { ChainProvider } from '../net/provider/types.js';
 import { fetchWalletBalance, type WalletBalance } from '../wallet/balance.js';
+import { accountPublicKeyFromHex, rewardAddressBech32FromAccountPublic } from '../crypto/derive.js';
 import type { ActiveWallet } from '../state/store.js';
 import { Working } from './Working.js';
 import { ChainError } from './Page.js';
@@ -42,6 +43,15 @@ export function Balance({
           chain,
           wallet.accountPubKey,
           getNetwork(network).networkId,
+          {
+            // The reward address turns the whole wallet into one account lookup
+            // (B12): the address list and the balance stop costing a request per
+            // derived address.
+            stakeAddress: rewardAddressBech32FromAccountPublic(
+              accountPublicKeyFromHex(wallet.accountPubKey),
+              network,
+            ),
+          },
         );
 
         if (cancelled) return;

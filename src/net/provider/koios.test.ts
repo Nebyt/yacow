@@ -480,3 +480,54 @@ describe('staking (reserved)', () => {
     await expect(provider().getAccountState?.('stake_none')).resolves.toBeNull();
   });
 });
+
+// B12 (plan §14): the account path. Koios answers the spendable balance in two
+// aggregated requests, but deliberately has no account address list.
+describe('account balance', () => {
+  const STAKE = 'stake_test1account';
+  const accountInfo = (overrides: Record<string, unknown> = {}) => ({
+    stake_address: STAKE,
+    status: 'registered',
+    delegated_pool: null,
+    utxo: '96227191',
+    rewards_available: '440440166',
+    withdrawals: '0',
+    ...overrides,
+  });
+
+  it('reports the UTxO figure, never utxo + rewards', async () => {
+    // Live 2026-10-05: total_balance 536667357 = utxo 96227191 + rewards
+    // 440440166. Only the UTxO part is spendable.
+    post('/account_info', [accountInfo()]);
+    post('/account_assets', [{ policy_id: POLICY, asset_name: NAME_HEX, quantity: '7' }]);
+
+    await expect(provider().getAccountBalance?.(STAKE)).resolves.toEqual({
+      lovelace: '96227191',
+      assets: [{ unit: UNIT, quantity: '7' }],
+    });
+  });
+
+  it('answers for an account that holds funds but was never registered', async () => {
+    post('/account_info', [
+      accountInfo({ status: 'not registered', utxo: '2500000', rewards_available: '0' }),
+    ]);
+    post('/account_assets', []);
+
+    await expect(provider().getAccountBalance?.(STAKE)).resolves.toEqual({
+      lovelace: '2500000',
+      assets: [],
+    });
+  });
+
+  it('returns null for an account the chain has never seen, without asking for assets', async () => {
+    post('/account_info', []);
+    await expect(provider().getAccountBalance?.(STAKE)).resolves.toBeNull();
+  });
+
+  it('has no account address list on purpose', () => {
+    // `account_addresses` returns only the addresses holding a UTxO right now
+    // (1 against Blockfrost's 170 for the same account, live 2026-10-05), so
+    // using it for discovery could hand back an already-used receive address.
+    expect(provider().getAccountAddresses).toBeUndefined();
+  });
+});

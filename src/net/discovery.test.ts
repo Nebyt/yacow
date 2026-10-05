@@ -113,3 +113,95 @@ describe('used addresses', () => {
     expect((await discoverAddresses(provider, accountPubKey, PREPROD_ID)).used).toEqual([]);
   });
 });
+
+// B12 (plan §14.5): the account path must be indistinguishable from the scan it
+// replaces, and it must never become a single point of failure.
+describe('account-level discovery', () => {
+  const STAKE = 'stake_test1account';
+
+  it('is equivalent to the per-address scan, without asking per address', async () => {
+    const { provider: probe } = providerWithUsed(new Set());
+    const derived = await discoverAddresses(probe, accountPubKey, PREPROD_ID, { gapLimit: 5 });
+    const usedExternal = derived.external.all[1];
+    const usedInternal = derived.internal.all[0];
+
+    const { provider: scanning } = providerWithUsed(new Set([usedExternal, usedInternal]));
+    const scanned = await discoverAddresses(scanning, accountPubKey, PREPROD_ID, { gapLimit: 5 });
+
+    let perAddressCalls = 0;
+    const accountProvider = {
+      id: 'blockfrost',
+      network: 'preprod',
+      filterUsedAddresses: async () => {
+        perAddressCalls += 1;
+        return [];
+      },
+      // The account list also carries an address from another derivation path,
+      // which must be ignored rather than counted (plan §14.5).
+      getAccountAddresses: async () => [usedInternal, 'addr_not_ours', usedExternal],
+    } as unknown as ChainProvider;
+
+    const fromAccount = await discoverAddresses(accountProvider, accountPubKey, PREPROD_ID, {
+      gapLimit: 5,
+      stakeAddress: STAKE,
+    });
+
+    expect(perAddressCalls).toBe(0);
+    expect(fromAccount.all).toEqual(scanned.all);
+    expect(fromAccount.used).toEqual(scanned.used);
+    expect(fromAccount.external.nextUnused).toBe(scanned.external.nextUnused);
+    expect(fromAccount.internal.nextUnused).toBe(scanned.internal.nextUnused);
+  });
+
+  it('falls back to the scan when the account lookup fails', async () => {
+    const { provider: probe } = providerWithUsed(new Set());
+    const usedOne = (await discoverAddresses(probe, accountPubKey, PREPROD_ID, { gapLimit: 5 }))
+      .external.all[0];
+
+    const provider = {
+      id: 'blockfrost',
+      network: 'preprod',
+      filterUsedAddresses: async (addresses: string[]) =>
+        addresses.filter((address) => address === usedOne),
+      getAccountAddresses: async () => {
+        throw new Error('429');
+      },
+    } as unknown as ChainProvider;
+
+    const result = await discoverAddresses(provider, accountPubKey, PREPROD_ID, {
+      gapLimit: 5,
+      stakeAddress: STAKE,
+    });
+    expect(result.external.used).toEqual([usedOne]);
+  });
+
+  it('never asks about the account when no stake address is known', async () => {
+    let asked = false;
+    const provider = {
+      filterUsedAddresses: async () => [],
+      getAccountAddresses: async () => {
+        asked = true;
+        return [];
+      },
+    } as unknown as ChainProvider;
+    await discoverAddresses(provider, accountPubKey, PREPROD_ID, { gapLimit: 3 });
+    expect(asked).toBe(false);
+  });
+
+  it('treats an empty account list as a fresh wallet', async () => {
+    const provider = {
+      id: 'blockfrost',
+      network: 'preprod',
+      filterUsedAddresses: async () => {
+        throw new Error('must not be called');
+      },
+      getAccountAddresses: async () => [],
+    } as unknown as ChainProvider;
+    const result = await discoverAddresses(provider, accountPubKey, PREPROD_ID, {
+      gapLimit: 3,
+      stakeAddress: STAKE,
+    });
+    expect(result.used).toEqual([]);
+    expect(result.external.all).toHaveLength(3);
+  });
+});
