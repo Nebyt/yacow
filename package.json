@@ -2,6 +2,7 @@
   "name": "yacow",
   "version": "0.0.0",
   "private": true,
+  "license": "AGPL-3.0-or-later",
   "description": "YACOW -- Yet Another Cardano Only Wallet: a lightweight interactive terminal wallet for Cardano",
   "type": "module",
   "bin": {

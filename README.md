@@ -78,3 +78,13 @@ Engine modules (`config/ crypto/ net/ security/ wallet/`) are UI-independent and
 ## Shortcuts
 
 `↑↓` move · `Enter` confirm (on Receive: copy address) · `Esc` back · `m` main · `s` send · `r` receive · `w` wallets · `n` network · `,` settings · `R` refresh · `q` quit
+
+## License
+
+**GNU Affero General Public License v3.0 or later** — `AGPL-3.0-or-later`. The full text is in [LICENSE](LICENSE).
+
+Copyright (C) 2026 Nebyt.
+
+You are free to use, study, share and modify YACOW — **including commercially**. What the AGPL asks in return is that if you distribute it, or run a modified version as a network service, you offer the corresponding source to those users under the same license. Section 13 is the one that covers the network case.
+
+> **No warranty.** YACOW is early-stage software that handles real keys and real funds. It ships with no warranty of any kind. Read the source, test on preprod, and do not point it at funds you cannot afford to lose.
